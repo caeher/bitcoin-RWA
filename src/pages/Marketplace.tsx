@@ -9,7 +9,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { cn, formatSats, formatPercentage, formatNumber } from '@lib/utils';
-import { Layout, Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@components';
+import { Layout, Badge, Button, Card, CardContent, CardHeader, CardTitle, EmptyState, SectionHeader, StatTile } from '@components';
 import type { AssetTokenOut, Asset } from '@types';
 
 // Mock data
@@ -110,35 +110,16 @@ function MarketOverview() {
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <Card>
-        <CardContent className="p-4">
-          <p className="text-xs text-foreground-secondary mb-1">24h Volume</p>
-          <p className="font-mono font-medium">{formatSats(totalVolume)} sats</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="p-4">
-          <p className="text-xs text-foreground-secondary mb-1">Market Cap</p>
-          <p className="font-mono font-medium">{formatSats(totalMarketCap)} sats</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="p-4">
-          <p className="text-xs text-foreground-secondary mb-1">Tokens</p>
-          <p className="font-mono font-medium">{mockMarketTokens.length}</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="p-4">
-          <p className="text-xs text-foreground-secondary mb-1">Avg Change (24h)</p>
-          <p className={cn(
-            'font-mono font-medium',
-            avgChange >= 0 ? 'text-accent-green' : 'text-accent-red'
-          )}>
-            {formatPercentage(avgChange)}
-          </p>
-        </CardContent>
-      </Card>
+      <StatTile label="24h Volume" value={`${formatSats(totalVolume)} sats`} mono surface="subtle" />
+      <StatTile label="Market Cap" value={`${formatSats(totalMarketCap)} sats`} mono surface="subtle" />
+      <StatTile label="Tokens" value={mockMarketTokens.length} mono surface="subtle" />
+      <StatTile
+        label="Avg Change (24h)"
+        value={formatPercentage(avgChange)}
+        mono
+        surface="subtle"
+        valueTone={avgChange >= 0 ? 'success' : 'danger'}
+      />
     </div>
   );
 }
@@ -224,17 +205,16 @@ export function Marketplace() {
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Marketplace</h1>
-            <p className="text-foreground-secondary">Trade tokenized real-world assets</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <BarChart3 size={20} className="text-accent-bitcoin" />
-            <span className="text-sm text-foreground-secondary">Live market data</span>
-          </div>
-        </div>
+        <SectionHeader
+          title="Marketplace"
+          description="Trade tokenized real-world assets"
+          actions={
+            <div className="flex items-center gap-2">
+              <BarChart3 size={20} className="text-accent-bitcoin" />
+              <span className="text-sm text-foreground-secondary">Live market data</span>
+            </div>
+          }
+        />
 
         {/* Market Overview */}
         <MarketOverview />
@@ -274,9 +254,11 @@ export function Marketplace() {
           <CardContent className="p-0">
             <div className="divide-y divide-border">
               {filteredTokens.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-foreground-secondary">No tokens found</p>
-                </div>
+                <EmptyState
+                  variant="card"
+                  title="No tokens found"
+                  description="Try adjusting your filters or sorting."
+                />
               ) : (
                 filteredTokens.map(token => (
                   <TokenRow key={token.id} token={token} />

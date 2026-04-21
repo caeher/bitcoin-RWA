@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   ArrowDownLeft, 
@@ -18,7 +18,11 @@ import { Layout, SatoshiAmount, BitcoinAddress, LightningInvoice, CopyButton } f
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@components/ui/Card';
 import { Button } from '@components/ui/Button';
 import { Badge } from '@components/ui/Badge';
-import { useWalletStore } from '@stores';
+import { EmptyState } from '@components/ui/EmptyState';
+import { InfoRow } from '@components/ui/InfoRow';
+import { SectionHeader } from '@components/ui/SectionHeader';
+import { StatTile } from '@components/ui/StatTile';
+import { useNotificationStore, useWalletStore } from '@stores';
 import { useWalletApi, useTokenizationApi } from '@hooks';
 import type { Transaction, TokenBalance } from '@types';
 
@@ -46,20 +50,28 @@ function BalanceOverview() {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="p-3 rounded-lg bg-background-elevated">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-2 h-2 rounded-full bg-accent-bitcoin" />
-              <span className="text-xs text-foreground-secondary">On-chain</span>
-            </div>
-            <span className="font-mono font-medium">{formatSats(onchain)}</span>
-          </div>
-          <div className="p-3 rounded-lg bg-background-elevated">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-2 h-2 rounded-full bg-accent-green" />
-              <span className="text-xs text-foreground-secondary">Lightning</span>
-            </div>
-            <span className="font-mono font-medium">{formatSats(lightning)}</span>
-          </div>
+          <StatTile
+            label={
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-accent-bitcoin" />
+                On-chain
+              </span>
+            }
+            value={formatSats(onchain)}
+            mono
+            size="sm"
+          />
+          <StatTile
+            label={
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-accent-green" />
+                Lightning
+              </span>
+            }
+            value={formatSats(lightning)}
+            mono
+            size="sm"
+          />
         </div>
 
         {pending > 0 && (
@@ -78,8 +90,8 @@ function QuickActions() {
   const actions = [
     { icon: ArrowDownLeft, label: 'Deposit', to: '/wallet/deposit', variant: 'default' as const },
     { icon: ArrowUpRight, label: 'Withdraw', to: '/wallet/withdraw', variant: 'outline' as const },
-    { icon: Send, label: 'Send', to: '/wallet/send', variant: 'outline' as const },
-    { icon: Zap, label: 'Buy BTC', to: '/wallet/buy', variant: 'outline' as const },
+    { icon: Send, label: 'Lightning Pay', to: '/wallet/withdraw', variant: 'outline' as const },
+    { icon: Zap, label: 'Buy BTC', to: '/onboarding', variant: 'outline' as const },
   ];
 
   return (
@@ -119,22 +131,26 @@ function CustodyStatus() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-foreground-secondary">Custody Backend</span>
-            <Badge variant="success">{custody?.wallet_backend || 'Software'}</Badge>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-foreground-secondary">Signer</span>
-            <Badge variant={custody?.signer_backend === 'hsm' ? 'success' : 'warning'}>
-              {custody?.signer_backend || 'Software'}
-            </Badge>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-foreground-secondary">2FA Status</span>
-            <Badge variant={custody?.withdraw_requires_2fa ? 'success' : 'warning'}>
-              {custody?.withdraw_requires_2fa ? 'Enabled' : 'Recommended'}
-            </Badge>
-          </div>
+          <InfoRow
+            label="Custody Backend"
+            value={<Badge variant="success">{custody?.wallet_backend || 'Software'}</Badge>}
+          />
+          <InfoRow
+            label="Signer"
+            value={
+              <Badge variant={custody?.signer_backend === 'hsm' ? 'success' : 'warning'}>
+                {custody?.signer_backend || 'Software'}
+              </Badge>
+            }
+          />
+          <InfoRow
+            label="2FA Status"
+            value={
+              <Badge variant={custody?.withdraw_requires_2fa ? 'success' : 'warning'}>
+                {custody?.withdraw_requires_2fa ? 'Enabled' : 'Recommended'}
+              </Badge>
+            }
+          />
           <div className="p-3 rounded-lg bg-background-elevated text-sm text-foreground-secondary">
             Your keys are encrypted and stored securely. Withdrawals require 2FA verification.
           </div>
@@ -158,12 +174,16 @@ function TokenBalances() {
       </CardHeader>
       <CardContent>
         {tokens.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-foreground-secondary mb-4">No token balances yet</p>
-            <Link to="/marketplace">
-              <Button size="sm">Browse Marketplace</Button>
-            </Link>
-          </div>
+          <EmptyState
+            variant="card"
+            title="No token balances yet"
+            description="Browse the marketplace to purchase tokenized assets."
+            action={
+              <Link to="/marketplace">
+                <Button size="sm">Browse Marketplace</Button>
+              </Link>
+            }
+          />
         ) : (
           <div className="space-y-3">
             {tokens.map((asset) => (
@@ -263,10 +283,10 @@ export function Wallet() {
   return (
     <Layout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Wallet</h1>
-          <p className="text-foreground-secondary">Manage your Bitcoin and token balances</p>
-        </div>
+        <SectionHeader
+          title="Wallet"
+          description="Manage your Bitcoin and token balances"
+        />
 
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
@@ -287,9 +307,33 @@ export function Wallet() {
 // Sub-pages
 export function WalletDeposit() {
   const [activeTab, setActiveTab] = useState<'onchain' | 'lightning'>('onchain');
-  const [showInvoice, setShowInvoice] = useState(false);
-  const mockAddress = 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh';
-  const mockInvoice = 'lnbc1m1p3q0d3kqqpp5f2...example_invoice_string';
+  const [invoiceAmount, setInvoiceAmount] = useState('100000');
+  const [invoiceMemo, setInvoiceMemo] = useState('Wallet deposit');
+  const [depositAddress, setDepositAddress] = useState<string | null>(null);
+  const { success } = useNotificationStore();
+  const { mutateAsync: createAddress, isPending: isCreatingAddress } = useWalletApi().createOnchainAddress;
+  const { mutateAsync: createInvoice, data: invoiceData, isPending: isCreatingInvoice } = useWalletApi().createInvoice;
+
+  useEffect(() => {
+    if (activeTab !== 'onchain' || depositAddress) {
+      return;
+    }
+
+    createAddress()
+      .then((response) => setDepositAddress(response.address))
+      .catch(() => null);
+  }, [activeTab, createAddress, depositAddress]);
+
+  const handleGenerateInvoice = async () => {
+    const amount = Math.max(1, Number(invoiceAmount) || 0);
+    const response = await createInvoice({
+      amount_sats: amount,
+      description: invoiceMemo || undefined,
+    });
+
+    success('Invoice created', 'Lightning invoice ready to receive payment.');
+    return response;
+  };
 
   return (
     <Layout>
@@ -325,32 +369,58 @@ export function WalletDeposit() {
             </div>
 
             {activeTab === 'onchain' ? (
-              <BitcoinAddress
-                address={mockAddress}
-                label="Send Bitcoin to this address"
-                variant="large"
-                qrSize={240}
-              />
+              depositAddress ? (
+                <BitcoinAddress
+                  address={depositAddress}
+                  label="Send Bitcoin to this address"
+                  variant="large"
+                  qrSize={240}
+                />
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-foreground-secondary mb-4">Generating your on-chain deposit address...</p>
+                  <Button onClick={() => createAddress().then((response) => setDepositAddress(response.address))} isLoading={isCreatingAddress}>
+                    Generate Address
+                  </Button>
+                </div>
+              )
             ) : (
               <div className="space-y-4">
-                {!showInvoice ? (
-                  <div className="text-center py-8">
-                    <div className="w-16 h-16 rounded-full bg-accent-bitcoin/10 flex items-center justify-center mx-auto mb-4">
-                      <Zap size={32} className="text-accent-bitcoin" />
+                {!invoiceData?.payment_request ? (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Amount (sats)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={invoiceAmount}
+                        onChange={(e) => setInvoiceAmount(e.target.value)}
+                        className="w-full rounded-lg border border-border bg-background-elevated px-3 py-2 font-mono"
+                      />
                     </div>
-                    <p className="text-foreground-secondary mb-4">
-                      Generate a Lightning invoice to receive instant payments
-                    </p>
-                    <Button onClick={() => setShowInvoice(true)}>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Memo
+                      </label>
+                      <input
+                        type="text"
+                        value={invoiceMemo}
+                        onChange={(e) => setInvoiceMemo(e.target.value)}
+                        className="w-full rounded-lg border border-border bg-background-elevated px-3 py-2"
+                      />
+                    </div>
+                    <Button onClick={handleGenerateInvoice} isLoading={isCreatingInvoice}>
                       Generate Invoice
                     </Button>
-                  </div>
+                  </>
                 ) : (
                   <LightningInvoice
-                    invoice={mockInvoice}
-                    amountSats={100000}
-                    description="Wallet deposit"
-                    expiry={1800}
+                    invoice={invoiceData.payment_request}
+                    amountSats={invoiceData.amount_sats}
+                    description={invoiceData.memo || invoiceMemo}
+                    expiry={invoiceData.expiry}
                   />
                 )}
               </div>
@@ -363,6 +433,41 @@ export function WalletDeposit() {
 }
 
 export function WalletWithdraw() {
+  const { success } = useNotificationStore();
+  const { data: wallet } = useWalletApi().getWalletSummary();
+  const { data: fees } = useWalletApi().getOnchainFees();
+  const { mutateAsync: payInvoice, isPending: isPayingInvoice } = useWalletApi().payInvoice;
+  const { mutateAsync: withdrawOnchain, isPending: isWithdrawing } = useWalletApi().withdrawOnchain;
+  const [destination, setDestination] = useState('');
+  const [amount, setAmount] = useState('');
+  const [feeRate, setFeeRate] = useState('');
+
+  const available = wallet?.onchain_balance_sats || 0;
+  const estimatedFee = Number(feeRate || fees?.economy_fee || 1) * 140;
+  const total = (Number(amount) || 0) + estimatedFee;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!destination.trim()) {
+      return;
+    }
+
+    if (destination.trim().toLowerCase().startsWith('ln')) {
+      const response = await payInvoice({ payment_request: destination.trim() });
+      success('Payment submitted', `Lightning payment status: ${response.status}.`);
+      return;
+    }
+
+    const response = await withdrawOnchain({
+      address: destination.trim(),
+      amount_sats: Math.max(1, Number(amount) || 0),
+      fee_rate: Math.max(1, Number(feeRate || fees?.economy_fee || 1)),
+    });
+
+    success('Withdrawal created', `Transaction ${truncateTxid(response.txid)} created successfully.`);
+  };
+
   return (
     <Layout>
       <div className="max-w-2xl mx-auto">
@@ -375,16 +480,18 @@ export function WalletWithdraw() {
         <Card>
           <CardHeader>
             <CardTitle>Withdraw Bitcoin</CardTitle>
-            <CardDescription>Send Bitcoin to an external address</CardDescription>
+            <CardDescription>Send Bitcoin to an external address or Lightning invoice</CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="space-y-6">
+            <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Destination Address
+                  Destination
                 </label>
                 <textarea
                   placeholder="bc1q... or lnbc1..."
+                  value={destination}
+                  onChange={(e) => setDestination(e.target.value)}
                   className="w-full p-3 rounded-lg bg-background-elevated border border-border text-foreground font-mono text-sm focus:outline-none focus:ring-2 focus:ring-accent-bitcoin/50"
                   rows={3}
                 />
@@ -398,35 +505,60 @@ export function WalletWithdraw() {
                   <input
                     type="number"
                     placeholder="0"
+                    min="1"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
                     className="w-full p-3 rounded-lg bg-background-elevated border border-border text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-accent-bitcoin/50"
                   />
                   <Button 
+                    type="button"
                     variant="ghost" 
                     size="sm" 
+                    onClick={() => setAmount(String(available))}
                     className="absolute right-2 top-1/2 -translate-y-1/2"
                   >
                     Max
                   </Button>
                 </div>
                 <p className="text-xs text-foreground-secondary mt-1">
-                  Available: {formatSats(2000000)} sats
+                  Available: {formatSats(available)} sats
                 </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Fee Rate (sat/vB)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={feeRate}
+                  onChange={(e) => setFeeRate(e.target.value)}
+                  placeholder={String(fees?.economy_fee || 1)}
+                  className="w-full p-3 rounded-lg bg-background-elevated border border-border text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-accent-bitcoin/50"
+                />
               </div>
 
               <div className="p-4 rounded-lg bg-background-elevated">
                 <div className="flex justify-between text-sm mb-2">
                   <span className="text-foreground-secondary">Network Fee</span>
-                  <span className="font-mono">~500 sats</span>
+                  <span className="font-mono">~{formatSats(estimatedFee)}</span>
                 </div>
                 <div className="flex justify-between text-sm font-medium">
                   <span>Total</span>
-                  <span className="font-mono">0 sats</span>
+                  <span className="font-mono">{formatSats(total)}</span>
                 </div>
               </div>
 
-              <Button fullWidth size="lg" variant="danger">
+              <Button
+                fullWidth
+                size="lg"
+                variant="danger"
+                type="submit"
+                isLoading={isWithdrawing || isPayingInvoice}
+              >
                 <Shield size={18} className="mr-2" />
-                Withdraw (2FA Required)
+                Send Funds
               </Button>
             </form>
           </CardContent>

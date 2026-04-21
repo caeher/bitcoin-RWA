@@ -1,5 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@lib/api';
+import {
+  asItemsResponse,
+  mapFiatProvider,
+  mapTransaction,
+  mapWallet,
+} from '@lib/apiMappers';
 import type { 
   Wallet, 
   Transaction, 
@@ -17,7 +23,10 @@ export const useWalletApi = () => {
 
   const getWalletSummary = () => useQuery({
     queryKey: ['walletSummary'],
-    queryFn: () => api.get<Wallet>('/wallet'),
+    queryFn: async () => {
+      const response = await api.get<{ wallet: any }>('/wallet');
+      return mapWallet(response.wallet);
+    },
   });
 
   const getCustodyStatus = () => useQuery({
@@ -31,7 +40,10 @@ export const useWalletApi = () => {
       const params = new URLSearchParams();
       if (cursor) params.append('cursor', cursor);
       if (type) params.append('type', type);
-      return api.get<CursorPaginatedResponse<Transaction>>(`/wallet/transactions?${params.toString()}`);
+      const query = params.toString();
+      return api
+        .get<{ transactions: any[]; next_cursor: string | null }>(`/wallet/transactions${query ? `?${query}` : ''}`)
+        .then((response) => asItemsResponse(response.transactions.map(mapTransaction), response.next_cursor));
     },
   });
 
@@ -41,12 +53,21 @@ export const useWalletApi = () => {
   });
 
   const createOnchainAddress = useMutation({
-    mutationFn: () => api.post<{ address: string }>('/wallet/onchain/address'),
+    mutationFn: () => api.post<{ address: string; unconfidential_address: string; type: string }>('/wallet/onchain/address'),
   });
 
   const createInvoice = useMutation({
-    mutationFn: (data: { amount_sats: number, description?: string }) => 
-      api.post<{ payment_request: string, payment_hash: string }>('/wallet/lightning/invoices', data),
+    mutationFn: (data: { amount_sats: number; description?: string }) =>
+      api.post<{
+        payment_request: string;
+        payment_hash: string;
+        amount_sats: number;
+        memo?: string | null;
+        expiry?: number;
+      }>('/wallet/lightning/invoices', {
+        amount_sats: data.amount_sats,
+        memo: data.description,
+      }),
   });
 
   const decodeBolt11 = useMutation({
@@ -56,7 +77,12 @@ export const useWalletApi = () => {
 
   const payInvoice = useMutation({
     mutationFn: (data: { payment_request: string }) => 
-      api.post<{ status: string }>('/wallet/lightning/payments', data),
+      api.post<{
+        payment_hash: string;
+        payment_preimage?: string | null;
+        status: string;
+        fee_sats?: number;
+      }>('/wallet/lightning/payments', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['walletSummary'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
@@ -64,8 +90,12 @@ export const useWalletApi = () => {
   });
 
   const withdrawOnchain = useMutation({
-    mutationFn: (data: { address: string, amount_sats: number, fee_rate?: number }) => 
-      api.post<{ txid: string }>('/wallet/onchain/withdraw', data),
+    mutationFn: (data: { address: string; amount_sats: number; fee_rate?: number }) =>
+      api.post<{ txid: string; amount_sat: number; fee_sat: number; status: string }>('/wallet/onchain/withdraw', {
+        address: data.address,
+        amount_sat: data.amount_sats,
+        fee_rate_sat_vb: data.fee_rate || 1,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['walletSummary'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
@@ -74,12 +104,29 @@ export const useWalletApi = () => {
 
   const getFiatProviders = () => useQuery({
     queryKey: ['fiatProviders'],
-    queryFn: () => api.get<{ providers: FiatOnRampProviderStatus[], compliance_notices: string[] }>('/wallet/fiat/onramp/providers'),
+    queryFn: async () => {
+      const response = await api.get<{ providers: any[]; compliance_notices: string[] }>('/wallet/fiat/onramp/providers');
+
+      return {
+        providers: response.providers.map(mapFiatProvider),
+        compliance_notices: response.compliance_notices,
+      };
+    },
   });
 
   const createFiatSession = useMutation({
     mutationFn: (data: FiatOnRampSessionRequest) => 
-      api.post<{ session_id: string, provider_id: string, status: string, next_action: { type: string, url: string } }>('/wallet/fiat/onramp/session', data),
+      api.post<{
+        session_id: string;
+        provider_id: string;
+        state: string;
+        handoff_url: string;
+        deposit_address: string;
+        destination_wallet_id: string;
+        expires_at: string;
+        disclaimer: string;
+        compliance_action: string;
+      }>('/wallet/fiat/onramp/session', data),
   });
 
   return {

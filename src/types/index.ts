@@ -1,10 +1,10 @@
 // User types
 export interface User {
   id: string;
-  email: string;
-  display_name?: string;
+  email?: string | null;
+  display_name: string;
   role: 'user' | 'seller' | 'admin' | 'auditor';
-  kyc_status: 'none' | 'pending' | 'verified' | 'rejected' | 'expired';
+  kyc_status?: 'none' | 'pending' | 'verified' | 'rejected' | 'expired';
   created_at: string;
   nostr_pubkey?: string;
   referral_code?: string;
@@ -27,7 +27,7 @@ export interface RegisterRequest {
   email: string;
   password: string;
   display_name: string;
-  referral_code?: string;
+  referrer_code?: string;
 }
 
 export interface LoginRequest {
@@ -53,12 +53,15 @@ export interface NostrLoginRequest {
 // Wallet types
 export interface Wallet {
   id: string;
-  user_id: string;
+  user_id?: string;
   onchain_balance_sats: number;
   lightning_balance_sats: number;
   pending_balance_sats: number;
   wallet_backend: 'software' | 'hsm';
-  created_at: string;
+  created_at?: string;
+  token_balances?: TokenBalance[];
+  total_value_sats?: number;
+  total_yield_earned_sats?: number;
 }
 
 export interface FeeEstimateResponse {
@@ -70,27 +73,42 @@ export interface FeeEstimateResponse {
 }
 
 export interface Bolt11DecodeResponse {
-  amount_sats: number;
-  description: string;
-  payee_pubkey: string;
+  payment_hash: string;
+  amount_sats?: number | null;
+  amount_msat?: number | null;
+  description?: string | null;
+  description_hash?: string | null;
+  payee_pubkey?: string | null;
   timestamp: string;
+  created_at?: string;
   expiry: number;
+  expires_at?: string;
+  destination?: string | null;
+  fallback_address?: string | null;
+  network?: string;
+  is_expired?: boolean;
 }
 
 export interface FiatOnRampProviderStatus {
   id: string;
   name: string;
-  logo_url: string;
+  logo_url?: string;
   supported_fiat_currencies: string[];
   supported_countries: string[];
   requires_kyc: boolean;
   disabled_reason?: string;
+  state?: 'ready' | 'pending_redirect' | 'kyc_required' | 'limited' | 'unavailable';
+  disclaimer?: string;
+  external_handoff_url?: string;
 }
 
 export interface FiatOnRampSessionRequest {
   provider_id: string;
-  amount_usd?: number;
-  destination_currency?: string;
+  fiat_currency: string;
+  fiat_amount: number;
+  country_code: string;
+  return_url: string;
+  cancel_url: string;
 }
 
 export interface TokenBalance {
@@ -100,11 +118,14 @@ export interface TokenBalance {
   balance: number;
   value_sats: number;
   change_24h: number;
+  liquid_asset_id?: string;
+  unit_price_sats?: number;
+  accrued_yield_sats?: number;
 }
 
 export interface Transaction {
   id: string;
-  wallet_id: string;
+  wallet_id?: string;
   type: 'deposit' | 'withdrawal' | 'ln_send' | 'ln_receive' | 'escrow_lock' | 'escrow_release' | 'fee';
   amount_sats: number;
   fee_sats: number;
@@ -114,6 +135,7 @@ export interface Transaction {
   description?: string;
   created_at: string;
   confirmed_at?: string;
+  direction?: 'in' | 'out';
 }
 
 export interface CustodyStatusResponse {
@@ -134,10 +156,12 @@ export interface AssetTokenOut {
   liquid_asset_id?: string;
   ticker: string;
   total_supply: number;
+  circulating_supply?: number;
   unit_price_sats: number;
   market_cap_sats: number;
   minted_at: string;
   asset_group_key?: string;
+  issuance_metadata?: Record<string, unknown> | null;
 }
 
 export interface Asset {
@@ -169,10 +193,14 @@ export interface AssetCreateRequest {
 export interface Order {
   id: string;
   token_id: string;
-  user_id: string;
+  user_id?: string;
   side: 'buy' | 'sell';
   quantity: number;
   price_sat: number;
+  order_type?: 'limit' | 'stop_limit';
+  trigger_price_sat?: number | null;
+  triggered_at?: string | null;
+  is_triggered?: boolean;
   status: 'open' | 'partially_filled' | 'filled' | 'cancelled';
   filled_quantity: number;
   created_at: string;
@@ -181,21 +209,24 @@ export interface Order {
 export interface OrderCreateRequest {
   token_id: string;
   side: 'buy' | 'sell';
+  order_type?: 'limit' | 'stop_limit';
   quantity: number;
   price_sat: number;
+  trigger_price_sat?: number | null;
 }
 
 export interface Trade {
   id: string;
   token_id: string;
-  buyer_order_id: string;
-  seller_order_id: string;
-  buyer_id: string;
-  seller_id: string;
+  buyer_order_id?: string;
+  seller_order_id?: string;
+  buyer_id?: string;
+  seller_id?: string;
   quantity: number;
   price_sat: number;
   total_sat: number;
-  status: 'pending' | 'escrow_funded' | 'completed' | 'disputed';
+  fee_sat?: number;
+  status: 'pending' | 'escrowed' | 'settled' | 'disputed' | 'cancelled';
   created_at: string;
   completed_at?: string;
 }
@@ -204,16 +235,18 @@ export interface Escrow {
   id: string;
   trade_id: string;
   multisig_address: string;
-  buyer_pubkey: string;
-  seller_pubkey: string;
-  platform_pubkey: string;
+  buyer_pubkey?: string;
+  seller_pubkey?: string;
+  platform_pubkey?: string;
   amount_sat: number;
   platform_fee_sat: number;
-  status: 'created' | 'funded' | 'released' | 'disputed' | 'refunded';
+  status: 'created' | 'funded' | 'inspection_pending' | 'released' | 'disputed' | 'refunded' | 'expired';
   funded_at?: string;
   released_at?: string;
   funding_txid?: string;
   release_txid?: string;
+  refund_txid?: string;
+  expires_at?: string;
 }
 
 export interface OrderBook {
@@ -221,6 +254,8 @@ export interface OrderBook {
   asks: OrderBookEntry[];
   spread: number;
   last_price: number;
+  token_id?: string;
+  volume_24h?: number;
 }
 
 export interface OrderBookEntry {
@@ -274,11 +309,13 @@ export interface TreasuryEntry {
   id: string;
   type: 'fee_collection' | 'disbursement' | 'donation';
   amount_sats: number;
-  description: string;
+  description?: string;
   related_trade_id?: string;
   created_at: string;
   disbursement_reason?: string;
   recipient_address?: string;
+  balance_after_sats?: number;
+  reference_id?: string | null;
 }
 
 export interface TreasurySummary {
@@ -293,15 +330,17 @@ export interface TreasurySummary {
 export interface Dispute {
   id: string;
   trade_id: string;
-  escrow_id: string;
+  escrow_id?: string;
   opened_by: string;
   reason: string;
-  status: 'open' | 'under_review' | 'resolved_buyer' | 'resolved_seller' | 'resolved_split';
-  evidence: string[];
+  status: 'open' | 'resolved';
+  evidence?: string[];
   opened_at: string;
   resolved_at?: string;
   resolution_notes?: string;
   resolved_by?: string;
+  resolution?: string | null;
+  updated_at?: string;
 }
 
 export interface UserRoleUpdate {
@@ -348,6 +387,151 @@ export interface FiatProvider {
   supported_countries: string[];
   requires_kyc: boolean;
   disabled_reason?: string;
+}
+
+export interface TwoFactorEnableResponse {
+  totp_uri: string;
+  backup_codes: string[];
+}
+
+export interface ApiKey {
+  id: string;
+  name: string;
+  key_prefix: string;
+  scopes: string[];
+  last_used_at?: string | null;
+  expires_at?: string | null;
+  revoked: boolean;
+  created_at: string;
+}
+
+export interface ApiKeyCreateRequest {
+  name: string;
+  scopes: string[];
+  expires_at?: string | null;
+}
+
+export interface ApiKeyCreateResponse extends ApiKey {
+  key: string;
+}
+
+export interface ReferredUserOut {
+  id: string;
+  email?: string | null;
+  display_name: string;
+  created_at: string;
+}
+
+export interface ReferralRewardOut {
+  id: string;
+  referred_user_id: string;
+  referred_display_name: string;
+  referred_email?: string | null;
+  reward_type: 'signup_bonus';
+  amount_sat: number;
+  status: 'credited' | 'reversed';
+  eligibility_event?: string | null;
+  credited_at?: string | null;
+  created_at: string;
+}
+
+export interface ReferralSummaryResponse {
+  referral_code: string;
+  referrals_count: number;
+  total_reward_sat: number;
+  referred_users: ReferredUserOut[];
+  rewards: ReferralRewardOut[];
+}
+
+export type CampaignFundingMode = 'intraledger' | 'external';
+export type CampaignStatus =
+  | 'draft'
+  | 'funding_pending'
+  | 'active'
+  | 'paused'
+  | 'completed'
+  | 'exhausted'
+  | 'cancelled'
+  | 'failed';
+
+export interface CampaignTriggerIn {
+  trigger_type: 'hashtag' | 'tag' | 'content_substring' | 'author_pubkey' | 'event_kind';
+  operator?: 'equals' | 'contains' | 'in';
+  value: string;
+  case_sensitive?: boolean;
+}
+
+export interface CampaignTriggerOut extends CampaignTriggerIn {
+  id: string;
+  operator: 'equals' | 'contains' | 'in';
+  case_sensitive: boolean;
+  created_at: string;
+}
+
+export interface CampaignFundingOut {
+  id: string;
+  funding_mode: CampaignFundingMode;
+  amount_sat: number;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'refunded';
+  payment_hash?: string | null;
+  payment_request?: string | null;
+  confirmed_at?: string | null;
+  created_at?: string | null;
+}
+
+export interface CampaignOut {
+  id: string;
+  name: string;
+  status: CampaignStatus;
+  funding_mode: CampaignFundingMode;
+  reward_amount_sat: number;
+  budget_total_sat: number;
+  budget_reserved_sat: number;
+  budget_spent_sat: number;
+  budget_refunded_sat: number;
+  max_rewards_per_user: number;
+  start_at?: string | null;
+  end_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  triggers?: CampaignTriggerOut[];
+  fundings?: CampaignFundingOut[];
+}
+
+export interface CampaignCreateRequest {
+  name: string;
+  funding_mode: CampaignFundingMode;
+  reward_amount_sat: number;
+  budget_total_sat: number;
+  max_rewards_per_user?: number;
+  start_at?: string | null;
+  end_at?: string | null;
+  triggers: CampaignTriggerIn[];
+}
+
+export interface CampaignMatchOut {
+  id: string;
+  relay_url: string;
+  event_id: string;
+  event_pubkey: string;
+  event_kind: number;
+  match_fingerprint: string;
+  status: 'matched' | 'ignored' | 'reserved' | 'paid' | 'failed';
+  ignore_reason?: string | null;
+  created_at: string;
+}
+
+export interface CampaignPayoutOut {
+  id: string;
+  match_id: string;
+  recipient_pubkey: string;
+  amount_sat: number;
+  fee_sat?: number | null;
+  payment_hash?: string | null;
+  status: 'pending' | 'succeeded' | 'failed';
+  failure_reason?: string | null;
+  created_at: string;
+  settled_at?: string | null;
 }
 
 // API Response types

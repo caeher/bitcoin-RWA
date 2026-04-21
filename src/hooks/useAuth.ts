@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore, useNotificationStore, useWalletStore } from '@stores';
 import type { User } from '@types';
+import { mapUser } from '@lib/apiMappers';
 
 interface LoginCredentials {
   email: string;
@@ -39,7 +40,7 @@ export function useAuth() {
 
       const response = await api.post<AuthResponse>('/auth/login', credentials);
       
-      storeLogin(response.user, response.tokens);
+      storeLogin(mapUser(response.user), response.tokens);
       success('Welcome back!', `Logged in as ${response.user.email || response.user.display_name}`);
       
       navigate(redirectTo);
@@ -70,7 +71,7 @@ export function useAuth() {
       const { twoFactorToken } = useAuthStore.getState();
       const response = await api.post<AuthResponse>('/auth/login', { email: twoFactorToken || '', password: '' });
       
-      storeLogin(response.user, response.tokens);
+      storeLogin(mapUser(response.user), response.tokens);
       success('Welcome back!', '2FA verification successful');
       
       navigate(redirectTo);
@@ -88,9 +89,14 @@ export function useAuth() {
     try {
       setLoading(true);
       
-      const response = await api.post<AuthResponse>('/auth/register', data);
+      const response = await api.post<AuthResponse>('/auth/register', {
+        email: data.email,
+        password: data.password,
+        display_name: data.display_name,
+        referrer_code: data.referralCode,
+      });
       
-      storeLogin(response.user, response.tokens);
+      storeLogin(mapUser(response.user), response.tokens);
       success('Account created!', 'Welcome to RWA Platform');
       
       navigate(redirectTo);
@@ -108,7 +114,7 @@ export function useAuth() {
     try {
       setLoading(true);
       const response = await api.post<AuthResponse>('/auth/nostr', { pubkey, signed_event: signedEvent });
-      storeLogin(response.user, response.tokens);
+      storeLogin(mapUser(response.user), response.tokens);
       success('Welcome back!', `Logged in with Nostr`);
       navigate(redirectTo);
       return { success: true };
@@ -123,7 +129,8 @@ export function useAuth() {
 
   const logout = useCallback(async () => {
     try {
-      await api.post('/auth/logout');
+      const refreshToken = useAuthStore.getState().session?.refresh_token;
+      await api.post('/auth/logout', { refresh_token: refreshToken });
     } catch (e) {
       // Ignore errors on logout
     }

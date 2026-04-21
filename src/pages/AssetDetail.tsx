@@ -1,4 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
+import { useState } from 'react';
 import { 
   ArrowLeft, 
   Building2, 
@@ -10,7 +11,21 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { cn, formatSats, formatPercentage, formatDate } from '@lib/utils';
-import { Layout, AIScoreGauge, Badge, Button, Card, CardContent, CardHeader, CardTitle, CardDescription } from '@components';
+import {
+  Layout,
+  AIScoreGauge,
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  EmptyState,
+  InfoRow,
+  SectionHeader,
+  StatTile,
+} from '@components';
 import { useTokenizationApi } from '@hooks';
 import type { Asset } from '@types';
 
@@ -18,6 +33,8 @@ import type { Asset } from '@types';
 
 export function AssetDetail() {
   const { id } = useParams<{ id: string }>();
+  const [totalSupply, setTotalSupply] = useState('1000');
+  const [unitPriceSat, setUnitPriceSat] = useState('1000');
   const { data: asset, isLoading } = useTokenizationApi().getAssetDetail(id || '');
   const { mutate: evaluate, isPending: isEvaluating } = useTokenizationApi().evaluateAsset;
   const { mutate: tokenize, isPending: isTokenizing } = useTokenizationApi().tokenizeAsset;
@@ -26,10 +43,12 @@ export function AssetDetail() {
   if (isLoading) {
     return (
       <Layout>
-        <div className="text-center py-16">
-          <div className="animate-spin w-8 h-8 mx-auto border-2 border-accent-bitcoin border-t-transparent rounded-full mb-4" />
-          <p className="text-foreground-secondary">Loading asset...</p>
-        </div>
+        <EmptyState
+          variant="page"
+          tone="warning"
+          title="Loading asset..."
+          icon={<div className="h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent" />}
+        />
       </Layout>
     );
   }
@@ -37,12 +56,16 @@ export function AssetDetail() {
   if (!asset) {
     return (
       <Layout>
-        <div className="text-center py-16">
-          <h1 className="text-2xl font-bold mb-4">Asset not found</h1>
-          <Link to="/assets">
-            <Button>Back to Assets</Button>
-          </Link>
-        </div>
+        <EmptyState
+          variant="page"
+          title="Asset not found"
+          description="The requested asset does not exist or is no longer available."
+          action={
+            <Link to="/assets">
+              <Button>Back to Assets</Button>
+            </Link>
+          }
+        />
       </Layout>
     );
   }
@@ -59,40 +82,38 @@ export function AssetDetail() {
           </Button>
         </Link>
 
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-          <div className="flex items-start gap-4">
-            <div className="w-16 h-16 rounded-xl bg-accent-bitcoin/10 flex items-center justify-center shrink-0">
+        <SectionHeader
+          title={asset.name}
+          description={asset.description}
+          leading={
+            <div className="w-16 h-16 rounded-xl bg-accent-bitcoin/10 flex items-center justify-center">
               <Building2 className="text-accent-bitcoin" size={32} />
             </div>
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-2xl font-bold">{asset.name}</h1>
-                <Badge 
-                  variant={isTokenized ? 'success' : asset.status === 'approved' ? 'warning' : 'secondary'}
+          }
+          meta={
+            <Badge variant={isTokenized ? 'success' : asset.status === 'approved' ? 'warning' : 'secondary'}>
+              {asset.status}
+            </Badge>
+          }
+          actions={
+            isTokenized ? (
+              <div className="flex flex-col items-end">
+                <p className="font-mono text-3xl font-bold">{formatSats(asset.token!.unit_price_sats)}</p>
+                <p className="text-foreground-secondary">sats per unit</p>
+                <div
+                  className={cn(
+                    'flex items-center gap-1 mt-2',
+                    change24h >= 0 ? 'text-accent-green' : 'text-accent-red'
+                  )}
                 >
-                  {asset.status}
-                </Badge>
+                  {change24h >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                  <span className="font-medium">{formatPercentage(change24h)}</span>
+                  <span className="text-foreground-secondary">24h</span>
+                </div>
               </div>
-              <p className="text-foreground-secondary max-w-2xl">{asset.description}</p>
-            </div>
-          </div>
-
-          {isTokenized && (
-            <div className="flex flex-col items-end">
-              <p className="font-mono text-3xl font-bold">{formatSats(asset.token!.unit_price_sats)}</p>
-              <p className="text-foreground-secondary">sats per unit</p>
-              <div className={cn(
-                'flex items-center gap-1 mt-2',
-                change24h >= 0 ? 'text-accent-green' : 'text-accent-red'
-              )}>
-                {change24h >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                <span className="font-medium">{formatPercentage(change24h)}</span>
-                <span className="text-foreground-secondary">24h</span>
-              </div>
-            </div>
-          )}
-        </div>
+            ) : null
+          }
+        />
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main content */}
@@ -135,22 +156,14 @@ export function AssetDetail() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="p-4 bg-background-elevated rounded-lg">
-                      <p className="text-xs text-foreground-secondary mb-1">Total Supply</p>
-                      <p className="font-mono font-medium">{asset.token.total_supply.toLocaleString()} units</p>
-                    </div>
-                    <div className="p-4 bg-background-elevated rounded-lg">
-                      <p className="text-xs text-foreground-secondary mb-1">Market Cap</p>
-                      <p className="font-mono font-medium">{formatSats(asset.token.market_cap_sats)} sats</p>
-                    </div>
-                    <div className="p-4 bg-background-elevated rounded-lg">
-                      <p className="text-xs text-foreground-secondary mb-1">Minted</p>
-                      <p className="font-mono font-medium">{formatDate(asset.token.minted_at, false)}</p>
-                    </div>
-                    <div className="p-4 bg-background-elevated rounded-lg">
-                      <p className="text-xs text-foreground-secondary mb-1">Asset Group</p>
-                      <p className="font-mono text-xs truncate">{asset.token.asset_group_key}</p>
-                    </div>
+                    <StatTile
+                      label="Total Supply"
+                      value={`${asset.token.total_supply.toLocaleString()} units`}
+                      mono
+                    />
+                    <StatTile label="Market Cap" value={`${formatSats(asset.token.market_cap_sats)} sats`} mono />
+                    <StatTile label="Minted" value={formatDate(asset.token.minted_at, false)} mono />
+                    <StatTile label="Asset Group" value={asset.token.asset_group_key} mono className="truncate" />
                   </div>
                 </CardContent>
               </Card>
@@ -211,9 +224,45 @@ export function AssetDetail() {
                        </Button>
                     )}
                     {asset.status === 'approved' && (
-                       <Button fullWidth onClick={() => tokenize(asset.id)} isLoading={isTokenizing}>
-                         Tokenize Asset
-                       </Button>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs text-foreground-secondary mb-1">
+                            Total Supply
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={totalSupply}
+                            onChange={(e) => setTotalSupply(e.target.value)}
+                            className="w-full rounded-lg border border-border bg-background-elevated px-3 py-2 text-sm font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-foreground-secondary mb-1">
+                            Unit Price (sats)
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={unitPriceSat}
+                            onChange={(e) => setUnitPriceSat(e.target.value)}
+                            className="w-full rounded-lg border border-border bg-background-elevated px-3 py-2 text-sm font-mono"
+                          />
+                        </div>
+                        <Button
+                          fullWidth
+                          onClick={() =>
+                            tokenize({
+                              assetId: asset.id,
+                              total_supply: Math.max(1, Number(totalSupply) || 0),
+                              unit_price_sat: Math.max(1, Number(unitPriceSat) || 0),
+                            })
+                          }
+                          isLoading={isTokenizing}
+                        >
+                          Tokenize Asset
+                        </Button>
+                      </div>
                     )}
                   </>
                 )}
@@ -226,18 +275,9 @@ export function AssetDetail() {
                 <CardTitle>Asset Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-foreground-secondary">Category</span>
-                  <span className="capitalize">{asset.category.replace('_', ' ')}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-foreground-secondary">Estimated Value</span>
-                  <span className="font-mono">{formatSats(asset.valuation_sat)} sats</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-foreground-secondary">Created</span>
-                  <span>{formatDate(asset.created_at, false)}</span>
-                </div>
+                <InfoRow label="Category" value={asset.category.replace('_', ' ')} valueClassName="capitalize" />
+                <InfoRow label="Estimated Value" value={`${formatSats(asset.valuation_sat)} sats`} valueClassName="font-mono" />
+                <InfoRow label="Created" value={formatDate(asset.created_at, false)} />
               </CardContent>
             </Card>
           </div>

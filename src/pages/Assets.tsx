@@ -12,6 +12,8 @@ import { Layout, AIScoreGauge } from '@components/specialized';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/Card';
 import { Button } from '@components/ui/Button';
 import { Badge } from '@components/ui/Badge';
+import { EmptyState } from '@components/ui/EmptyState';
+import { SectionHeader } from '@components/ui/SectionHeader';
 import { useTokenizationApi } from '@hooks';
 import type { Asset } from '../types';
 
@@ -20,11 +22,10 @@ import type { Asset } from '../types';
 const categories = [
   { value: 'all', label: 'All Categories' },
   { value: 'real_estate', label: 'Real Estate' },
-  { value: 'energy', label: 'Energy' },
+  { value: 'commodity', label: 'Commodity' },
+  { value: 'invoice', label: 'Invoice' },
   { value: 'art', label: 'Art' },
-  { value: 'agriculture', label: 'Agriculture' },
-  { value: 'commodities', label: 'Commodities' },
-  { value: 'infrastructure', label: 'Infrastructure' },
+  { value: 'other', label: 'Other' },
 ];
 
 const statuses = [
@@ -32,7 +33,8 @@ const statuses = [
   { value: 'tokenized', label: 'Tokenized' },
   { value: 'approved', label: 'Approved' },
   { value: 'evaluating', label: 'Evaluating' },
-  { value: 'submitted', label: 'Submitted' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'rejected', label: 'Rejected' },
 ];
 
 function AssetCard({ asset }: { asset: Asset }) {
@@ -129,20 +131,17 @@ export function Assets() {
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Assets</h1>
-            <p className="text-foreground-secondary">
-              Browse {tokenizedCount} tokenized assets worth {formatSats(totalValue)} sats
-            </p>
-          </div>
-          <Link to="/assets/submit">
-            <Button leftIcon={<Plus size={18} />}>
-              Submit Asset
-            </Button>
-          </Link>
-        </div>
+        <SectionHeader
+          title="Assets"
+          description={`Browse ${tokenizedCount} tokenized assets worth ${formatSats(totalValue)} sats`}
+          actions={
+            <Link to="/assets/submit">
+              <Button leftIcon={<Plus size={18} />}>
+                Submit Asset
+              </Button>
+            </Link>
+          }
+        />
 
         {/* Filters */}
         <Card>
@@ -186,16 +185,19 @@ export function Assets() {
 
         {/* Asset Grid */}
         {isLoading ? (
-          <div className="text-center py-16">
-            <div className="animate-spin w-8 h-8 mx-auto border-2 border-accent-bitcoin border-t-transparent rounded-full mb-4" />
-            <p className="text-foreground-secondary">Loading assets...</p>
-          </div>
+          <EmptyState
+            variant="page"
+            tone="warning"
+            title="Loading assets..."
+            icon={<div className="animate-spin h-6 w-6 border-2 border-current border-t-transparent rounded-full" />}
+          />
         ) : filteredAssets.length === 0 ? (
-          <div className="text-center py-16">
-            <Building2 className="mx-auto h-12 w-12 text-foreground-secondary/50" />
-            <h3 className="mt-4 text-lg font-medium">No assets found</h3>
-            <p className="text-foreground-secondary">Try adjusting your filters</p>
-          </div>
+          <EmptyState
+            variant="page"
+            title="No assets found"
+            description="Try adjusting your filters"
+            icon={<Building2 size={24} />}
+          />
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredAssets.map(asset => (

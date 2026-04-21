@@ -8,6 +8,7 @@ export { AssetDetail } from './AssetDetail';
 export { AssetSubmit } from './AssetSubmit';
 export { Marketplace } from './Marketplace';
 export { TokenTrading } from './TokenTrading';
-export { Education } from './Education';
 export { Onboarding } from './Onboarding';
 export { Admin } from './Admin';
+export { Settings } from './Settings';
+export { NostrCampaigns } from './NostrCampaigns';

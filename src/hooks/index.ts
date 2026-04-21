@@ -7,3 +7,4 @@ export { useWalletApi } from './useWalletApi';
 export { useTokenizationApi } from './useTokenizationApi';
 export { useMarketplaceApi } from './useMarketplaceApi';
 export { useAdminApi } from './useAdminApi';
+export { useNostrApi } from './useNostrApi';

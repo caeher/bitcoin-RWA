@@ -15,6 +15,9 @@ import { Layout, SatoshiAmount } from '@components/specialized';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@components/ui/Card';
 import { Button } from '@components/ui/Button';
 import { Badge } from '@components/ui/Badge';
+import { EmptyState } from '@components/ui/EmptyState';
+import { InfoRow } from '@components/ui/InfoRow';
+import { SectionHeader } from '@components/ui/SectionHeader';
 import { 
   useWalletApi, 
   useTokenizationApi,
@@ -97,13 +100,17 @@ function BalanceBreakdownCard() {
         </div>
         <div className="space-y-3">
           {data.map((item) => (
-            <div key={item.label} className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className={cn('w-3 h-3 rounded-full', item.color)} />
-                <span className="text-sm text-foreground-secondary">{item.label}</span>
-              </div>
-              <span className="font-mono text-sm">{formatSats(item.value)} sats</span>
-            </div>
+            <InfoRow
+              key={item.label}
+              label={
+                <div className="flex items-center gap-2">
+                  <div className={cn('w-3 h-3 rounded-full', item.color)} />
+                  <span>{item.label}</span>
+                </div>
+              }
+              value={`${formatSats(item.value)} sats`}
+              valueClassName="font-mono"
+            />
           ))}
         </div>
       </CardContent>
@@ -260,7 +267,11 @@ function OpenOrders() {
       </CardHeader>
       <CardContent>
         {orders.length === 0 ? (
-          <p className="text-center text-foreground-secondary py-4">No open orders</p>
+          <EmptyState
+            variant="card"
+            title="No open orders"
+            description="Your active buy and sell orders will appear here."
+          />
         ) : (
           <div className="space-y-3">
             {orders.map((order) => (
@@ -290,21 +301,20 @@ export function Dashboard() {
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Dashboard</h1>
-            <p className="text-foreground-secondary">Welcome back to your portfolio</p>
-          </div>
-          <div className="flex gap-3">
-            <Link to="/wallet/deposit">
-              <Button variant="outline">Deposit</Button>
-            </Link>
-            <Link to="/assets/submit">
-              <Button>Submit Asset</Button>
-            </Link>
-          </div>
-        </div>
+        <SectionHeader
+          title="Dashboard"
+          description="Welcome back to your portfolio"
+          actions={
+            <>
+              <Link to="/wallet/deposit">
+                <Button variant="outline">Deposit</Button>
+              </Link>
+              <Link to="/assets/submit">
+                <Button>Submit Asset</Button>
+              </Link>
+            </>
+          }
+        />
 
         {/* Balance cards */}
         <div className="grid md:grid-cols-2 gap-6">

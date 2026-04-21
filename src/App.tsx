@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './stores';
-import { ToastContainer, Layout } from './components/specialized';
+import { ToastContainer } from './components/specialized';
 import { useAutoLogout } from './hooks';
 import {
   Landing,
@@ -16,9 +16,10 @@ import {
   AssetSubmit,
   Marketplace,
   TokenTrading,
-  Education,
   Onboarding,
   Admin,
+  Settings,
+  NostrCampaigns,
 } from './pages';
 
 // Create React Query client
@@ -111,10 +112,10 @@ function AppContent() {
           </ProtectedRoute>
         } />
 
-        {/* Education */}
-        <Route path="/education" element={
+        {/* Nostr campaigns */}
+        <Route path="/campaigns" element={
           <ProtectedRoute>
-            <Education />
+            <NostrCampaigns />
           </ProtectedRoute>
         } />
 
@@ -132,15 +133,9 @@ function AppContent() {
           </AdminRoute>
         } />
 
-        {/* Settings placeholder */}
         <Route path="/settings" element={
           <ProtectedRoute>
-            <Layout>
-              <div className="text-center py-16">
-                <h1 className="text-2xl font-bold mb-4">Settings</h1>
-                <p className="text-foreground-secondary">Settings page coming soon</p>
-              </div>
-            </Layout>
+            <Settings />
           </ProtectedRoute>
         } />
 

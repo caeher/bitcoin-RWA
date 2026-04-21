@@ -8,7 +8,7 @@ import {
   TrendingUp, 
   Lock,
   Building2,
-  GraduationCap
+  Megaphone
 } from 'lucide-react';
 import { cn } from '@lib/utils';
 import { Button } from '@components/ui/Button';
@@ -157,7 +157,7 @@ const features = [
 const assetCategories = [
   { icon: Building2, name: 'Real Estate', count: 124 },
   { icon: Globe, name: 'Infrastructure', count: 56 },
-  { icon: GraduationCap, name: 'Education', count: 89 },
+  { icon: Megaphone, name: 'Campaigns', count: 34 },
 ];
 
 export function Landing() {
@@ -223,16 +223,6 @@ export function Landing() {
             </Link>
           </div>
 
-          {/* Live Stats */}
-          <div className={cn(
-            'grid grid-cols-3 gap-8 mt-16 max-w-lg mx-auto',
-            'transition-all duration-700 delay-500',
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-          )}>
-            <StatCounter label="Assets Tokenized" value={269} />
-            <StatCounter label="Trading Volume" value={45} suffix="M" />
-            <StatCounter label="Active Users" value={12847} />
-          </div>
         </div>
 
         {/* Scroll indicator */}

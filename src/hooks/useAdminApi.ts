@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@lib/api';
+import { asItemsResponse, mapDispute, mapUser } from '@lib/apiMappers';
 import type { 
   User, 
   UserRoleUpdate,
@@ -18,29 +19,41 @@ export const useAdminApi = () => {
       const params = new URLSearchParams();
       if (role) params.append('role', role);
       if (cursor) params.append('cursor', cursor);
-      return api.get<CursorPaginatedResponse<User>>(`/admin/users?${params.toString()}`);
+      const query = params.toString();
+      return api
+        .get<{ users: any[]; next_cursor: string | null }>(`/admin/users${query ? `?${query}` : ''}`)
+        .then((response) => asItemsResponse(response.users.map(mapUser), response.next_cursor));
     },
   });
 
   const updateUserRole = useMutation({
     mutationFn: (data: UserRoleUpdate) => 
-      api.patch<User>(`/admin/users/${data.user_id}`, { new_role: data.new_role, reason: data.reason }),
+      api.patch<User>(`/admin/users/${data.user_id}`, { role: data.new_role }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
     }
   });
 
   const disburseTreasury = useMutation({
-    mutationFn: (data: { amount_sats: number, recipient_address: string, reason: string }) => 
-      api.post<{ txid: string }>('/admin/treasury/disburse', data),
+    mutationFn: (data: { amount_sats: number; description: string }) =>
+      api.post<{ entry: any }>('/admin/treasury/disburse', {
+        amount_sat: data.amount_sats,
+        description: data.description,
+      }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['treasurySummary'] });
+      queryClient.invalidateQueries({ queryKey: ['treasurySummaryAdmin'] });
     }
   });
 
   const resolveDispute = useMutation({
-    mutationFn: (data: { trade_id: string, resolution: string, specific_amounts?: any }) => 
-      api.post<Dispute>(`/admin/escrows/${data.trade_id}/resolve`, data),
+    mutationFn: async (data: { trade_id: string; resolution: string; notes: string }) => {
+      const response = await api.post<{ dispute: any }>(`/admin/escrows/${data.trade_id}/resolve`, {
+        resolution: data.resolution,
+        notes: data.notes,
+      });
+
+      return mapDispute(response.dispute);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminDisputes'] });
     }
@@ -61,7 +74,8 @@ export const useAdminApi = () => {
     queryFn: () => {
       const params = new URLSearchParams();
       if (status) params.append('status', status);
-      return api.get<CursorPaginatedResponse<any>>(`/auth/kyc/admin?${params.toString()}`);
+      const query = params.toString();
+      return api.get(`/auth/kyc/admin${query ? `?${query}` : ''}`);
     },
   });
 
@@ -75,21 +89,26 @@ export const useAdminApi = () => {
 
   const getDisputes = (status?: string) => useQuery({
     queryKey: ['adminDisputes', status],
-    queryFn: () => {
-      const params = new URLSearchParams();
-      if (status) params.append('status', status);
-      return api.get<CursorPaginatedResponse<Dispute>>(`/admin/escrows/disputes?${params.toString()}`);
-    },
+    enabled: false,
+    queryFn: async () => asItemsResponse<Dispute>([]),
   });
 
   const getTreasuryLedger = () => useQuery({
     queryKey: ['treasuryLedger'],
-    queryFn: () => api.get<CursorPaginatedResponse<TreasuryEntry>>('/admin/treasury/ledger'),
+    enabled: false,
+    queryFn: async () => asItemsResponse<TreasuryEntry>([]),
   });
 
   const getTreasurySummary = () => useQuery({
     queryKey: ['treasurySummaryAdmin'],
-    queryFn: () => api.get<TreasurySummary>('/admin/treasury/summary'),
+    enabled: false,
+    queryFn: async () => ({
+      total_balance_sats: 0,
+      total_fees_collected_sats: 0,
+      total_disbursed_sats: 0,
+      education_fund_sats: 0,
+      last_updated: '',
+    }),
   });
 
   return {

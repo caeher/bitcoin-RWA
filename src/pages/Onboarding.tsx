@@ -14,8 +14,8 @@ import {
 import { cn, formatSats } from '@lib/utils';
 import { Layout, Button, Card, CardContent, CardHeader, CardTitle, CardDescription, Badge } from '@components';
 import type { FiatProvider } from '@types';
-import { useWalletApi } from '@hooks';
-import { useAuthStore } from '@stores';
+import { useAuthApi, useWalletApi } from '@hooks';
+import { useNotificationStore } from '@stores';
 
 // No mock data needed anymore
 
@@ -78,7 +78,7 @@ function SecurityStep({ completed }: { completed: boolean }) {
   );
 }
 
-function KYCStep({ status, onComplete }: { status: string; onComplete: () => void }) {
+function KYCStep({ status, onComplete, isSubmitting }: { status: string; onComplete: () => void; isSubmitting: boolean }) {
   const isVerified = status === 'verified';
   const isPending = status === 'pending';
 
@@ -135,7 +135,7 @@ function KYCStep({ status, onComplete }: { status: string; onComplete: () => voi
         <Button variant="outline" fullWidth>
           Skip for Now
         </Button>
-        <Button fullWidth onClick={onComplete}>
+        <Button fullWidth onClick={onComplete} isLoading={isSubmitting}>
           Verify Identity
         </Button>
       </div>
@@ -143,7 +143,15 @@ function KYCStep({ status, onComplete }: { status: string; onComplete: () => voi
   );
 }
 
-function FundingStep({ providers }: { providers: FiatProvider[] }) {
+function FundingStep({
+  providers,
+  onLaunch,
+  isLaunching,
+}: {
+  providers: FiatProvider[];
+  onLaunch: (providerId: string) => void;
+  isLaunching: boolean;
+}) {
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
 
@@ -204,6 +212,8 @@ function FundingStep({ providers }: { providers: FiatProvider[] }) {
       <Button 
         fullWidth 
         disabled={!selectedProvider || !agreed}
+        isLoading={isLaunching}
+        onClick={() => selectedProvider && onLaunch(selectedProvider)}
         leftIcon={<Zap size={18} />}
       >
         Launch Provider
@@ -216,12 +226,19 @@ export function Onboarding() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   
-  const { user } = useAuthStore();
+  const { success } = useNotificationStore();
   const { data: custodyData } = useWalletApi().getCustodyStatus();
   const { data: fiatData } = useWalletApi().getFiatProviders();
-  const { mutateAsync: createSession } = useWalletApi().createFiatSession;
+  const { mutateAsync: createSession, isPending: isLaunchingProvider } = useWalletApi().createFiatSession;
+  const { data: kycData } = useAuthApi().getKycStatus();
+  const { mutateAsync: submitKyc, isPending: isSubmittingKyc } = useAuthApi().submitKyc;
+  const [kycStatus, setKycStatus] = useState(kycData?.status || 'none');
 
-  const [kycStatus, setKycStatus] = useState(user?.kyc_status || 'none');
+  useEffect(() => {
+    if (kycData?.status) {
+      setKycStatus(kycData.status);
+    }
+  }, [kycData?.status]);
 
   const custodyConfigured = custodyData?.state === 'ready';
   const availableProviders = fiatData?.providers || [];
@@ -234,9 +251,23 @@ export function Onboarding() {
     }
   };
 
-  const handleKycComplete = () => {
-    // This would typically trigger a mutation to start KYC flow
+  const handleKycComplete = async () => {
+    await submitKyc({ notes: 'KYC flow initiated from onboarding.' });
     setKycStatus('pending');
+  };
+
+  const handleLaunchProvider = async (providerId: string) => {
+    const response = await createSession({
+      provider_id: providerId,
+      fiat_currency: 'USD',
+      fiat_amount: 100,
+      country_code: 'US',
+      return_url: `${window.location.origin}/onboarding`,
+      cancel_url: `${window.location.origin}/onboarding`,
+    });
+
+    success('Redirecting to provider', 'Continuing your fiat on-ramp flow.');
+    window.location.href = response.handoff_url;
   };
 
   return (
@@ -279,8 +310,20 @@ export function Onboarding() {
         <Card>
           <CardContent className="p-6">
             {currentStep === 0 && <SecurityStep completed={custodyConfigured} />}
-            {currentStep === 1 && <KYCStep status={kycStatus} onComplete={handleKycComplete} />}
-            {currentStep === 2 && <FundingStep providers={availableProviders as any[]} />}
+            {currentStep === 1 && (
+              <KYCStep
+                status={kycStatus}
+                onComplete={handleKycComplete}
+                isSubmitting={isSubmittingKyc}
+              />
+            )}
+            {currentStep === 2 && (
+              <FundingStep
+                providers={availableProviders as any[]}
+                onLaunch={handleLaunchProvider}
+                isLaunching={isLaunchingProvider}
+              />
+            )}
           </CardContent>
         </Card>
 

@@ -4,8 +4,6 @@ import {
   ArrowLeft, 
   ArrowRight, 
   Check, 
-  Building2, 
-  Upload,
   FileText,
   Sparkles,
   AlertCircle
@@ -22,11 +20,9 @@ const steps = [
 
 const categories = [
   { value: 'real_estate', label: 'Real Estate' },
-  { value: 'energy', label: 'Energy' },
+  { value: 'commodity', label: 'Commodity' },
+  { value: 'invoice', label: 'Invoice' },
   { value: 'art', label: 'Art' },
-  { value: 'agriculture', label: 'Agriculture' },
-  { value: 'commodities', label: 'Commodities' },
-  { value: 'infrastructure', label: 'Infrastructure' },
   { value: 'other', label: 'Other' },
 ];
 
@@ -40,14 +36,14 @@ export function AssetSubmit() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [estimatedValue, setEstimatedValue] = useState('');
-  const [documents, setDocuments] = useState<File[]>([]);
+  const [documentsUrl, setDocumentsUrl] = useState('');
 
   const canProceed = () => {
     if (currentStep === 0) {
       return name.length > 0 && description.length > 0 && category !== '';
     }
     if (currentStep === 1) {
-      return estimatedValue.length > 0 && parseInt(estimatedValue) > 0;
+      return estimatedValue.length > 0 && parseInt(estimatedValue) > 0 && documentsUrl.length > 0;
     }
     return true;
   };
@@ -71,18 +67,11 @@ export function AssetSubmit() {
         description,
         category: category as any,
         valuation_sat: parseInt(estimatedValue),
-        // File upload is not supported in the current OpenAPI mock so we just pass empty string
-        documents_url: '',
+        documents_url: documentsUrl,
       });
       setIsComplete(true);
     } catch (e) {
       console.error('Submission failed', e);
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setDocuments(Array.from(e.target.files));
     }
   };
 
@@ -223,49 +212,14 @@ export function AssetSubmit() {
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Supporting Documents
-                  </label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-accent-bitcoin/30 transition-colors">
-                    <Upload className="mx-auto h-8 w-8 text-foreground-secondary mb-3" />
-                    <p className="text-sm text-foreground-secondary mb-2">
-                      Drag and drop files here, or click to browse
-                    </p>
-                    <p className="text-xs text-foreground-secondary">
-                      PDF, images, or documents up to 10MB each
-                    </p>
-                    <input
-                      type="file"
-                      multiple
-                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                      onChange={handleFileChange}
-                      className="hidden"
-                      id="file-upload"
-                    />
-                    <label htmlFor="file-upload">
-                      <Button variant="outline" size="sm" className="mt-4 cursor-pointer">
-                        Choose Files
-                      </Button>
-                    </label>
-                  </div>
-
-                  {documents.length > 0 && (
-                    <div className="mt-4 space-y-2">
-                      {documents.map((file, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 rounded-lg bg-background-elevated">
-                          <div className="flex items-center gap-2">
-                            <FileText size={16} className="text-foreground-secondary" />
-                            <span className="text-sm">{file.name}</span>
-                          </div>
-                          <Badge variant="secondary" size="sm">
-                            {(file.size / 1024 / 1024).toFixed(2)} MB
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <Input
+                  label="Supporting Documents URL"
+                  placeholder="https://example.com/asset-documents.pdf"
+                  value={documentsUrl}
+                  onChange={(e) => setDocumentsUrl(e.target.value)}
+                  helperText="The current API expects a public document URL instead of direct file upload."
+                  required
+                />
               </div>
             )}
 
@@ -288,7 +242,7 @@ export function AssetSubmit() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-foreground-secondary">Documents</span>
-                      <span>{documents.length} file(s)</span>
+                      <span className="font-mono text-xs truncate max-w-[220px]">{documentsUrl}</span>
                     </div>
                   </div>
                 </div>

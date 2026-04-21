@@ -5,7 +5,7 @@ import {
   LayoutDashboard, 
   Building2, 
   Store, 
-  GraduationCap, 
+  Megaphone, 
   Settings, 
   LogOut, 
   Menu, 
@@ -53,7 +53,7 @@ export function Layout({ children, requireAuth = true, adminOnly = false }: Layo
     { path: '/wallet', label: 'Wallet', icon: Wallet },
     { path: '/assets', label: 'Assets', icon: Building2 },
     { path: '/marketplace', label: 'Marketplace', icon: Store },
-    { path: '/education', label: 'Education', icon: GraduationCap },
+    { path: '/campaigns', label: 'Campaigns', icon: Megaphone },
   ];
 
   const adminNavItems = [
