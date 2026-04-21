@@ -4,7 +4,8 @@ import {
   Wallet, 
   LayoutDashboard, 
   Building2, 
-  Store, 
+  BookOpen,
+  KeyRound,
   Megaphone, 
   Settings, 
   LogOut, 
@@ -52,8 +53,14 @@ export function Layout({ children, requireAuth = true, adminOnly = false }: Layo
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/wallet', label: 'Wallet', icon: Wallet },
     { path: '/assets', label: 'Assets', icon: Building2 },
-    { path: '/marketplace', label: 'Marketplace', icon: Store },
     { path: '/campaigns', label: 'Campaigns', icon: Megaphone },
+    { path: '/api-keys', label: 'API Keys', icon: KeyRound },
+    {
+      path: 'https://docs.cubo.caeher.com/',
+      label: 'Documentation',
+      icon: BookOpen,
+      external: true,
+    },
   ];
 
   const adminNavItems = [
@@ -81,7 +88,23 @@ export function Layout({ children, requireAuth = true, adminOnly = false }: Layo
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname.startsWith(item.path);
+            const isActive = !item.external && location.pathname.startsWith(item.path);
+
+            if (item.external) {
+              return (
+                <a
+                  key={item.path}
+                  href={item.path}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-all text-foreground-secondary hover:text-foreground hover:bg-background-elevated"
+                >
+                  <Icon size={18} />
+                  {item.label}
+                </a>
+              );
+            }
+
             return (
               <Link
                 key={item.path}
@@ -170,7 +193,24 @@ export function Layout({ children, requireAuth = true, adminOnly = false }: Layo
           <nav className="space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = location.pathname.startsWith(item.path);
+              const isActive = !item.external && location.pathname.startsWith(item.path);
+
+              if (item.external) {
+                return (
+                  <a
+                    key={item.path}
+                    href={item.path}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium text-foreground-secondary"
+                  >
+                    <Icon size={18} />
+                    {item.label}
+                  </a>
+                );
+              }
+
               return (
                 <Link
                   key={item.path}

@@ -10,7 +10,7 @@ import { useNotificationStore } from '@stores';
 export function Login() {
   const location = useLocation();
   const { login, nostrLogin } = useAuth();
-  const { isAvailable, getPublicKey, signLoginChallenge } = useNostr();
+  const { isAvailable, getPublicKey, fetchLoginChallenge, signLoginChallenge } = useNostr();
   const { error: notifyError } = useNotificationStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -53,8 +53,14 @@ export function Login() {
       setIsLoading(false);
       return;
     }
+
+    const challenge = await fetchLoginChallenge();
+    if (!challenge) {
+      setIsLoading(false);
+      return;
+    }
     
-    const signedEvent = await signLoginChallenge(pubkey);
+    const signedEvent = await signLoginChallenge(pubkey, challenge);
     if (!signedEvent) {
       notifyError('Signature failed', 'Could not sign the login challenge.');
       setIsLoading(false);

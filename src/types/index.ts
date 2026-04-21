@@ -42,11 +42,18 @@ export interface NostrSignedEvent {
   content: string;
   tags: string[][];
   sig: string;
+  pubkey?: string;
 }
 
 export interface NostrLoginRequest {
   pubkey: string;
   signed_event: NostrSignedEvent;
+}
+
+export interface NostrChallengeResponse {
+  challenge: string;
+  kind: 22242;
+  expires_in: number;
 }
 
 

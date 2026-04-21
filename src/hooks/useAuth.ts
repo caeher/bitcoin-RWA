@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore, useNotificationStore, useWalletStore } from '@stores';
-import type { User } from '@types';
+import type { AuthResponse, NostrLoginRequest, NostrSignedEvent, User } from '@types';
 import { mapUser } from '@lib/apiMappers';
 
 interface LoginCredentials {
@@ -17,7 +17,6 @@ interface RegisterData {
 }
 
 import { api } from '@lib/api';
-import type { AuthResponse } from '@types';
 
 export function useAuth() {
   const navigate = useNavigate();
@@ -110,10 +109,11 @@ export function useAuth() {
     }
   }, [navigate, storeLogin, setLoading, success, error]);
 
-  const nostrLogin = useCallback(async (pubkey: string, signedEvent: any, redirectTo = '/dashboard') => {
+  const nostrLogin = useCallback(async (pubkey: string, signedEvent: NostrSignedEvent, redirectTo = '/dashboard') => {
     try {
       setLoading(true);
-      const response = await api.post<AuthResponse>('/auth/nostr', { pubkey, signed_event: signedEvent });
+      const payload: NostrLoginRequest = { pubkey, signed_event: signedEvent };
+      const response = await api.post<AuthResponse>('/auth/nostr', payload, { requireAuth: false });
       storeLogin(mapUser(response.user), response.tokens);
       success('Welcome back!', `Logged in with Nostr`);
       navigate(redirectTo);

@@ -10,5 +10,6 @@ export { Marketplace } from './Marketplace';
 export { TokenTrading } from './TokenTrading';
 export { Onboarding } from './Onboarding';
 export { Admin } from './Admin';
+export { ApiKeys } from './ApiKeys';
 export { Settings } from './Settings';
 export { NostrCampaigns } from './NostrCampaigns';

@@ -18,6 +18,7 @@ import {
   TokenTrading,
   Onboarding,
   Admin,
+  ApiKeys,
   Settings,
   NostrCampaigns,
 } from './pages';
@@ -136,6 +137,12 @@ function AppContent() {
         <Route path="/settings" element={
           <ProtectedRoute>
             <Settings />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/api-keys" element={
+          <ProtectedRoute>
+            <ApiKeys />
           </ProtectedRoute>
         } />
 

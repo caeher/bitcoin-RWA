@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
-import type { NostrSignedEvent } from '@types';
+import type { NostrChallengeResponse, NostrSignedEvent } from '@types';
 import { useNotificationStore } from '@stores';
+import { api } from '@lib/api';
 
 interface NostrExtension {
   getPublicKey(): Promise<string>;
@@ -31,19 +32,14 @@ export function useNostr() {
     }
   }, [error]);
 
-  const signLoginChallenge = useCallback(async (pubkey: string): Promise<NostrSignedEvent | null> => {
+  const signLoginChallenge = useCallback(async (pubkey: string, challenge: string): Promise<NostrSignedEvent | null> => {
     if (!window.nostr) return null;
     
-    // Create the challenge event (NIP-98 based approach, though simplified for login)
-    // using kind 22242 (client authentication)
     const event = {
       kind: 22242,
       created_at: Math.floor(Date.now() / 1000),
-      tags: [
-        ['relay', 'wss://nostr.example.com'], // Or the platform's relay
-        ['challenge', `login-${Date.now()}`]
-      ],
-      content: 'Login to CUBO Platform',
+      tags: [],
+      content: challenge,
       pubkey,
     };
 
@@ -55,9 +51,30 @@ export function useNostr() {
     }
   }, []);
 
+  const fetchLoginChallenge = useCallback(async (): Promise<string | null> => {
+    try {
+      const response = await api.post<NostrChallengeResponse>(
+        '/auth/nostr/challenge',
+        undefined,
+        { requireAuth: false, skipErrorToast: true }
+      );
+
+      if (response.kind !== 22242 || !response.challenge) {
+        throw new Error('Invalid Nostr challenge response');
+      }
+
+      return response.challenge;
+    } catch (err) {
+      console.error('Failed to fetch Nostr challenge', err);
+      error('Nostr login unavailable', 'Could not get a sign-in challenge from the server.');
+      return null;
+    }
+  }, [error]);
+
   return {
     isAvailable,
     getPublicKey,
+    fetchLoginChallenge,
     signLoginChallenge
   };
 }
