@@ -38,8 +38,6 @@ export const mapUser = (raw: any): User => ({
   kyc_status: raw.kyc_status,
   created_at: raw.created_at,
   nostr_pubkey: raw.nostr_pubkey ?? undefined,
-  referral_code: raw.referral_code ?? undefined,
-  referred_by: raw.referred_by ?? undefined,
 });
 
 export const mapTokenBalance = (raw: any): TokenBalance => {

@@ -25,7 +25,6 @@ export function Register() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [referralCode, setReferralCode] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   // Password strength
@@ -47,7 +46,7 @@ export function Register() {
       return email.length > 0 && email.includes('@') && displayName.length > 0;
     }
     if (currentStep === 1) {
-      return password.length >= 8 && password === confirmPassword && agreedToTerms;
+      return passwordStrength === 4 && password === confirmPassword && agreedToTerms;
     }
     return true;
   };
@@ -72,8 +71,7 @@ export function Register() {
       email,
       password,
       display_name: displayName,
-      referralCode: referralCode || undefined,
-    });
+    }, '/wallet');
 
     if (!result.success) {
       setError(result.error || 'Registration failed');
@@ -156,14 +154,7 @@ export function Register() {
                 required
               />
 
-              <Input
-                label="Referral Code (optional)"
-                placeholder="Enter referral code"
-                value={referralCode}
-                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                leftElement={<User size={18} />}
-                helperText="Earn rewards when you refer friends"
-              />
+
 
               <Button
                 fullWidth
@@ -229,6 +220,29 @@ export function Register() {
                       <span className="text-xs text-foreground-secondary">
                         {strengthLabels[passwordStrength - 1]}
                       </span>
+                    </div>
+                    {/* Password requirements checklist */}
+                    <div className="mt-3 space-y-2">
+                      {[
+                        { label: '8+ characters', met: password.length >= 8 },
+                        { label: 'At least one uppercase letter', met: /[A-Z]/.test(password) },
+                        { label: 'At least one number', met: /[0-9]/.test(password) },
+                        { label: 'At least one special character', met: /[^A-Za-z0-9]/.test(password) },
+                      ].map((req) => (
+                        <div key={req.label} className="flex items-center gap-2">
+                          <div
+                            className={cn(
+                              'w-4 h-4 rounded-full flex items-center justify-center transition-colors',
+                              req.met ? 'bg-accent-green/20 text-accent-green' : 'bg-background text-foreground-muted border border-border'
+                            )}
+                          >
+                            {req.met ? <Check size={10} strokeWidth={3} /> : <div className="w-1 h-1 rounded-full bg-current" />}
+                          </div>
+                          <span className={cn('text-xs transition-colors', req.met ? 'text-foreground' : 'text-foreground-secondary')}>
+                            {req.label}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -326,12 +340,7 @@ export function Register() {
                   <span className="text-foreground-secondary">Email</span>
                   <span className="text-foreground">{email}</span>
                 </div>
-                {referralCode && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-foreground-secondary">Referral Code</span>
-                    <span className="text-accent-bitcoin">{referralCode}</span>
-                  </div>
-                )}
+
               </div>
 
               <Button

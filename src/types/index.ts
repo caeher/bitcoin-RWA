@@ -7,8 +7,6 @@ export interface User {
   kyc_status?: 'none' | 'pending' | 'verified' | 'rejected' | 'expired';
   created_at: string;
   nostr_pubkey?: string;
-  referral_code?: string;
-  referred_by?: string;
 }
 
 export interface TokensOut {
@@ -27,7 +25,6 @@ export interface RegisterRequest {
   email: string;
   password: string;
   display_name: string;
-  referrer_code?: string;
 }
 
 export interface LoginRequest {
