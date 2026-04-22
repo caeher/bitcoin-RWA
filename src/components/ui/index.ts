@@ -6,3 +6,4 @@ export { SectionHeader } from './SectionHeader';
 export { EmptyState } from './EmptyState';
 export { StatTile } from './StatTile';
 export { InfoRow } from './InfoRow';
+export { Skeleton } from './Skeleton';
