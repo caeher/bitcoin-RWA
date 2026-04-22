@@ -94,7 +94,7 @@ export function NostrCampaigns() {
     };
 
     await createCampaign(payload);
-    success('Campana creada', 'La campana Nostr fue creada correctamente.');
+    success('Campaña creada', 'La campaña Nostr fue creada correctamente.');
     setName('');
     setRewardAmount('1000');
     setBudgetTotal('10000');
@@ -116,13 +116,13 @@ export function NostrCampaigns() {
 
     if (campaign.funding_mode === 'intraledger') {
       await fundIntraledger({ campaignId: campaign.id, amount_sat: amount });
-      success('Fondos reservados', 'La campana quedo financiada con saldo interno.');
+      success('Fondos reservados', 'La campaña quedo financiada con saldo interno.');
       return;
     }
 
     const response = await fundExternal({ campaignId: campaign.id, amount_sat: amount });
     setLatestExternalFunding({ campaignId: campaign.id, funding: response });
-    success('Invoice generada', 'La campana ahora tiene una invoice externa para funding.');
+    success('Invoice generada', 'La campaña ahora tiene una invoice externa para funding.');
   };
 
   const renderCampaignActions = (campaign: CampaignOut) => (
@@ -190,7 +190,7 @@ export function NostrCampaigns() {
       <div className="space-y-6">
         <SectionHeader
           title="Nostr Campaigns"
-          description="Creacion, funding y seguimiento de campanas conectadas al servicio nostr."
+          description="Creacion, funding y seguimiento de campañas conectadas al servicio nostr."
         />
 
         <div className="grid xl:grid-cols-3 gap-6">
@@ -198,7 +198,7 @@ export function NostrCampaigns() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Megaphone size={18} className="text-accent-bitcoin" />
-                Nueva campana
+                Nueva campaña
               </CardTitle>
               <CardDescription>POST `/v1/nostr/campaigns`.</CardDescription>
             </CardHeader>
@@ -340,7 +340,7 @@ export function NostrCampaigns() {
                   isLoading={isCreatingCampaign}
                   disabled={!triggers.some((trigger) => trigger.value.trim())}
                 >
-                  Crear campana
+                  Crear campaña
                 </Button>
               </form>
             </CardContent>
@@ -348,17 +348,17 @@ export function NostrCampaigns() {
 
           <Card className="xl:col-span-2">
             <CardHeader>
-              <CardTitle>Campanas activas y historicas</CardTitle>
+              <CardTitle>Campañas activas y historicas</CardTitle>
               <CardDescription>GET `/v1/nostr/campaigns` y detalle operativo.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {isLoading && <p className="text-foreground-secondary">Cargando campanas...</p>}
+              {isLoading && <p className="text-foreground-secondary">Cargando campañas...</p>}
 
               {!isLoading && !campaigns.length && (
                 <EmptyState
                   variant="card"
-                  title="No hay campanas Nostr"
-                  description="Aun no existen campanas Nostr creadas."
+                  title="No hay campañas Nostr"
+                  description="Aun no existen campañas Nostr creadas."
                 />
               )}
 
