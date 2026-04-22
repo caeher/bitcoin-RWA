@@ -30,14 +30,37 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
   }, ref) => {
     const [showPassword, setShowPassword] = React.useState(false);
     const [copied, setCopied] = React.useState(false);
+    const inputRef = React.useRef<HTMLInputElement | null>(null);
     const inputId = id || React.useId();
     const inputValue = value !== undefined ? value : defaultValue;
+    const hasRightControls = Boolean(rightElement || isPassword || copyable);
+
+    React.useImperativeHandle(ref, () => inputRef.current as HTMLInputElement);
 
     const handleCopy = async () => {
       if (inputValue) {
         await navigator.clipboard.writeText(String(inputValue));
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+      }
+    };
+
+    const handleDateInputClick = (event: React.MouseEvent<HTMLInputElement>) => {
+      props.onClick?.(event);
+
+      if (event.defaultPrevented) {
+        return;
+      }
+
+      const pickerEnabledTypes = new Set(['date', 'datetime-local', 'time', 'month', 'week']);
+      if (
+        pickerEnabledTypes.has(type) &&
+        !props.disabled &&
+        !props.readOnly &&
+        inputRef.current &&
+        'showPicker' in inputRef.current
+      ) {
+        inputRef.current.showPicker();
       }
     };
 
@@ -72,37 +95,44 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               'transition-all duration-200',
               error && 'border-accent-red focus-visible:ring-accent-red/50',
               leftElement && 'pl-10',
-              (rightElement || isPassword || copyable) && 'pr-10',
+              hasRightControls && 'pr-10',
               className
             )}
-            ref={ref}
+            ref={inputRef}
             value={value}
             defaultValue={defaultValue}
+            onClick={handleDateInputClick}
             {...props}
           />
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-            {isPassword && (
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="p-1 text-foreground-secondary hover:text-foreground transition-colors"
-                tabIndex={-1}
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            )}
-            {copyable && (
-              <button
-                type="button"
-                onClick={handleCopy}
-                className="p-1 text-foreground-secondary hover:text-foreground transition-colors"
-                tabIndex={-1}
-              >
-                {copied ? <Check size={16} className="text-accent-green" /> : <Copy size={16} />}
-              </button>
-            )}
-            {rightElement && !isPassword && !copyable && rightElement}
-          </div>
+          {hasRightControls && (
+            <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              {isPassword && (
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="pointer-events-auto p-1 text-foreground-secondary hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              )}
+              {copyable && (
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="pointer-events-auto p-1 text-foreground-secondary hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {copied ? <Check size={16} className="text-accent-green" /> : <Copy size={16} />}
+                </button>
+              )}
+              {rightElement && !isPassword && !copyable && (
+                <div className="pointer-events-auto">
+                  {rightElement}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         {error && (
           <p className="mt-1.5 text-sm text-accent-red">{error}</p>
