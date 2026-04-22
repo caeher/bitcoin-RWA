@@ -29,8 +29,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   
   const headers = new Headers(customConfig.headers || {});
   
-  // Set default content type if not provided and has body
-  if (customConfig.body && !headers.has('Content-Type') && typeof customConfig.body === 'string') {
+  // Always set Content-Type for methods that send a body
+  const method = (customConfig.method || 'GET').toUpperCase();
+  if (['POST', 'PUT', 'PATCH'].includes(method) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 

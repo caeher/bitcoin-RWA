@@ -13,7 +13,6 @@ interface RegisterData {
   email: string;
   password: string;
   display_name: string;
-  referralCode?: string;
 }
 
 import { api } from '@lib/api';
@@ -37,7 +36,7 @@ export function useAuth() {
         return { success: false, requires2FA: true };
       }
 
-      const response = await api.post<AuthResponse>('/auth/login', credentials);
+      const response = await api.post<AuthResponse>('/auth/login', credentials, { requireAuth: false });
       
       storeLogin(mapUser(response.user), response.tokens);
       success('Welcome back!', `Logged in as ${response.user.email || response.user.display_name}`);
@@ -84,7 +83,7 @@ export function useAuth() {
     }
   }, [navigate, storeLogin, setLoading, success, error]);
 
-  const register = useCallback(async (data: RegisterData, redirectTo = '/onboarding') => {
+  const register = useCallback(async (data: RegisterData, redirectTo = '/wallet') => {
     try {
       setLoading(true);
       
@@ -92,8 +91,7 @@ export function useAuth() {
         email: data.email,
         password: data.password,
         display_name: data.display_name,
-        referrer_code: data.referralCode,
-      });
+      }, { requireAuth: false });
       
       storeLogin(mapUser(response.user), response.tokens);
       success('Account created!', 'Welcome to RWA Platform');
