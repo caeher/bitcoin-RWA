@@ -7,4 +7,6 @@ export { PriceChart } from './PriceChart';
 export { OrderBookDepth } from './OrderBookDepth';
 export { CopyButton } from './CopyButton';
 export { ToastContainer } from './Toast';
+export { DepositAddress } from './DepositAddress';
+export { WalletAddressWidget } from './WalletAddressWidget';
 export { Layout } from './Layout';

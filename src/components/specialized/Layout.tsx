@@ -18,6 +18,7 @@ import {
 import { cn } from '@lib/utils';
 import { useAuthStore, useNotificationStore } from '@stores';
 import { Button } from '@components/ui/Button';
+import { WalletAddressWidget } from './WalletAddressWidget';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -187,9 +188,20 @@ export function Layout({ children, requireAuth = true, adminOnly = false }: Layo
         </button>
       </header>
 
+      {/* Desktop Header */}
+      <header className="hidden lg:flex fixed top-0 right-0 left-64 h-16 bg-background/80 backdrop-blur-md border-b border-border z-40 items-center justify-end px-8">
+        {isAuthenticated && <WalletAddressWidget />}
+      </header>
+
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 top-16 bg-background z-30 p-4">
+        <div className="lg:hidden fixed inset-0 top-16 bg-background z-30 p-4 overflow-y-auto">
+          {isAuthenticated && (
+            <div className="mb-6 p-2 bg-background-elevated rounded-xl border border-border">
+              <p className="text-[10px] uppercase tracking-wider text-foreground-secondary mb-2 px-2">Your Deposit Address</p>
+              <WalletAddressWidget />
+            </div>
+          )}
           <nav className="space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -250,7 +262,7 @@ export function Layout({ children, requireAuth = true, adminOnly = false }: Layo
       )}
 
       {/* Main content */}
-      <main className="flex-1 lg:ml-64 pt-16 lg:pt-0 min-h-screen">
+      <main className="flex-1 lg:ml-64 pt-16 min-h-screen">
         <div className="p-4 lg:p-8 max-w-7xl mx-auto">
           {children}
         </div>

@@ -11,7 +11,7 @@ import {
   Activity
 } from 'lucide-react';
 import { cn, formatSats, formatPercentage, formatRelativeTime } from '@lib/utils';
-import { Layout, SatoshiAmount } from '@components/specialized';
+import { Layout, SatoshiAmount, DepositAddress } from '@components/specialized';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@components/ui/Card';
 import { Button } from '@components/ui/Button';
 import { Badge } from '@components/ui/Badge';
@@ -318,7 +318,10 @@ export function Dashboard() {
 
         {/* Balance cards */}
         <div className="grid md:grid-cols-2 gap-6">
-          <BalanceCard />
+          <div className="space-y-6">
+            <BalanceCard />
+            <DepositAddress />
+          </div>
           <BalanceBreakdownCard />
         </div>
 
