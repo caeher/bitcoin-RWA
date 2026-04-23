@@ -45,7 +45,7 @@ const statusVariant = (status: CampaignOut['status']) => {
 
 export function NostrCampaigns() {
   const nostrApi = useNostrApi();
-  const { success } = useNotificationStore();
+  const { success, error: showError } = useNotificationStore();
   const { data: campaigns = [], isLoading } = nostrApi.getCampaigns();
 
   const [expandedCampaignId, setExpandedCampaignId] = useState<string | null>(null);
@@ -106,23 +106,62 @@ export function NostrCampaigns() {
   };
 
   const handleFundCampaign = async (campaign: CampaignOut) => {
-    const amount = Math.max(
-      1,
-      Number(
-        fundingAmounts[campaign.id] ||
-          campaign.budget_total_sat - campaign.budget_reserved_sat - campaign.budget_spent_sat
-      ) || 0
-    );
+    try {
+      const amount = Math.max(
+        1,
+        Number(
+          fundingAmounts[campaign.id] ||
+            campaign.budget_total_sat - campaign.budget_reserved_sat - campaign.budget_spent_sat
+        ) || 0
+      );
 
-    if (campaign.funding_mode === 'intraledger') {
-      await fundIntraledger({ campaignId: campaign.id, amount_sat: amount });
-      success('Fondos reservados', 'La campaña quedo financiada con saldo interno.');
-      return;
+      if (campaign.funding_mode === 'intraledger') {
+        await fundIntraledger({ campaignId: campaign.id, amount_sat: amount });
+        success('Fondos reservados', 'La campaña quedo financiada con saldo interno.');
+        return;
+      }
+
+      const response = await fundExternal({ campaignId: campaign.id, amount_sat: amount });
+      setLatestExternalFunding({ campaignId: campaign.id, funding: response });
+      success('Invoice generada', 'La campaña ahora tiene una invoice externa para funding.');
+    } catch (error: any) {
+      showError('Error al financiar', error.message || 'No se pudo procesar el financiamiento.');
     }
+  };
 
-    const response = await fundExternal({ campaignId: campaign.id, amount_sat: amount });
-    setLatestExternalFunding({ campaignId: campaign.id, funding: response });
-    success('Invoice generada', 'La campaña ahora tiene una invoice externa para funding.');
+  const handleCreateCampaignWithHandler = async (event: FormEvent) => {
+    try {
+      await handleCreateCampaign(event);
+    } catch (error: any) {
+      showError('Error al crear campaña', error.message || 'No se pudo crear la campaña.');
+    }
+  };
+
+  const handleActivateCampaign = async (id: string) => {
+    try {
+      await activateCampaign(id);
+      success('Campaña activada', 'La campaña ahora está escuchando eventos en Nostr.');
+    } catch (error: any) {
+      showError('Error al activar', error.message || 'No se pudo activar la campaña.');
+    }
+  };
+
+  const handlePauseCampaign = async (id: string) => {
+    try {
+      await pauseCampaign(id);
+      success('Campaña pausada', 'Se detuvo temporalmente la detección de eventos.');
+    } catch (error: any) {
+      showError('Error al pausar', error.message || 'No se pudo pausar la campaña.');
+    }
+  };
+
+  const handleCancelCampaign = async (id: string) => {
+    try {
+      await cancelCampaign(id);
+      success('Campaña cancelada', 'La campaña ha sido finalizada.');
+    } catch (error: any) {
+      showError('Error al cancelar', error.message || 'No se pudo cancelar la campaña.');
+    }
   };
 
   const renderCampaignActions = (campaign: CampaignOut) => (
@@ -153,7 +192,7 @@ export function NostrCampaigns() {
 
       {campaign.status === 'funding_pending' && (
         <Button
-          onClick={() => activateCampaign(campaign.id)}
+          onClick={() => handleActivateCampaign(campaign.id)}
           isLoading={isActivatingCampaign}
           leftIcon={<PlayCircle size={16} />}
         >
@@ -164,7 +203,7 @@ export function NostrCampaigns() {
       {campaign.status === 'active' && (
         <Button
           variant="outline"
-          onClick={() => pauseCampaign(campaign.id)}
+          onClick={() => handlePauseCampaign(campaign.id)}
           isLoading={isPausingCampaign}
           leftIcon={<PauseCircle size={16} />}
         >
@@ -175,7 +214,7 @@ export function NostrCampaigns() {
       {(campaign.status === 'draft' || campaign.status === 'funding_pending' || campaign.status === 'paused') && (
         <Button
           variant="danger"
-          onClick={() => cancelCampaign(campaign.id)}
+          onClick={() => handleCancelCampaign(campaign.id)}
           isLoading={isCancellingCampaign}
           leftIcon={<XCircle size={16} />}
         >
@@ -203,7 +242,7 @@ export function NostrCampaigns() {
               <CardDescription>POST `/v1/nostr/campaigns`.</CardDescription>
             </CardHeader>
             <CardContent>
-              <form className="space-y-4" onSubmit={handleCreateCampaign}>
+              <form className="space-y-4" onSubmit={handleCreateCampaignWithHandler}>
                 <Input
                   label="Nombre"
                   value={name}
