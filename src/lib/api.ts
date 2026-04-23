@@ -24,8 +24,11 @@ export class ApiError extends Error {
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { requireAuth = true, skipErrorToast = false, ...customConfig } = options;
   
-  // Always use /v1 prefix for all calls
-  const url = `${API_BASE}${path.startsWith('/v1') ? path : `/v1${path.startsWith('/') ? path : `/${path}`}`}`;
+  // Support absolute URLs when a specific endpoint must bypass base-path composition.
+  const isAbsoluteUrl = /^https?:\/\//i.test(path);
+  const url = isAbsoluteUrl
+    ? path
+    : `${API_BASE}${path.startsWith('/v1') ? path : `/v1${path.startsWith('/') ? path : `/${path}`}`}`;
   
   const headers = new Headers(customConfig.headers || {});
   const hasFormDataBody = customConfig.body instanceof FormData;

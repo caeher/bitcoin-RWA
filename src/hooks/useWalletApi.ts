@@ -64,7 +64,7 @@ export const useWalletApi = () => {
         amount_sats: number;
         memo?: string | null;
         expiry?: number;
-      }>('/lightning/invoices', {
+      }>('http://localhost:8000/v1/lightning/invoices', {
         amount_sats: data.amount_sats,
         memo: data.description,
       }),
