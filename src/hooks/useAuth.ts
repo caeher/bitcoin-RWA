@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore, useNotificationStore, useWalletStore } from '@stores';
 import type { AuthResponse, NostrLoginRequest, NostrSignedEvent, User } from '@types';
 import { mapUser } from '@lib/apiMappers';
@@ -19,6 +20,7 @@ import { api } from '@lib/api';
 
 export function useAuth() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { login: storeLogin, logout: storeLogout, setLoading, setTwoFactorPending } = useAuthStore();
   const { success, error } = useNotificationStore();
   const { setWallet } = useWalletStore();
@@ -38,6 +40,7 @@ export function useAuth() {
 
       const response = await api.post<AuthResponse>('/auth/login', credentials, { requireAuth: false });
       
+      queryClient.clear();
       storeLogin(mapUser(response.user), response.tokens);
       success('Welcome back!', `Logged in as ${response.user.email || response.user.display_name}`);
       
@@ -50,7 +53,7 @@ export function useAuth() {
     } finally {
       setLoading(false);
     }
-  }, [navigate, storeLogin, setLoading, setTwoFactorPending, success, error]);
+  }, [navigate, storeLogin, setLoading, setTwoFactorPending, success, error, queryClient]);
 
   const verify2FA = useCallback(async (code: string, redirectTo = '/dashboard') => {
     try {
@@ -69,6 +72,7 @@ export function useAuth() {
       const { twoFactorToken } = useAuthStore.getState();
       const response = await api.post<AuthResponse>('/auth/login', { email: twoFactorToken || '', password: '' });
       
+      queryClient.clear();
       storeLogin(mapUser(response.user), response.tokens);
       success('Welcome back!', '2FA verification successful');
       
@@ -81,7 +85,7 @@ export function useAuth() {
     } finally {
       setLoading(false);
     }
-  }, [navigate, storeLogin, setLoading, success, error]);
+  }, [navigate, storeLogin, setLoading, success, error, queryClient]);
 
   const register = useCallback(async (data: RegisterData, redirectTo = '/wallet') => {
     try {
@@ -93,6 +97,7 @@ export function useAuth() {
         display_name: data.display_name,
       }, { requireAuth: false });
       
+      queryClient.clear();
       storeLogin(mapUser(response.user), response.tokens);
       success('Account created!', 'Welcome to RWA Platform');
       
@@ -105,13 +110,15 @@ export function useAuth() {
     } finally {
       setLoading(false);
     }
-  }, [navigate, storeLogin, setLoading, success, error]);
+  }, [navigate, storeLogin, setLoading, success, error, queryClient]);
 
   const nostrLogin = useCallback(async (pubkey: string, signedEvent: NostrSignedEvent, redirectTo = '/dashboard') => {
     try {
       setLoading(true);
       const payload: NostrLoginRequest = { pubkey, signed_event: signedEvent };
       const response = await api.post<AuthResponse>('/auth/nostr', payload, { requireAuth: false });
+      
+      queryClient.clear();
       storeLogin(mapUser(response.user), response.tokens);
       success('Welcome back!', `Logged in with Nostr`);
       navigate(redirectTo);
@@ -123,7 +130,7 @@ export function useAuth() {
     } finally {
       setLoading(false);
     }
-  }, [navigate, storeLogin, setLoading, success, error]);
+  }, [navigate, storeLogin, setLoading, success, error, queryClient]);
 
   const logout = useCallback(async () => {
     try {
@@ -132,11 +139,12 @@ export function useAuth() {
     } catch (e) {
       // Ignore errors on logout
     }
+    queryClient.clear();
     storeLogout();
     setWallet(null);
     success('Logged out', 'You have been logged out successfully');
     navigate('/');
-  }, [storeLogout, setWallet, success, navigate]);
+  }, [storeLogout, setWallet, success, navigate, queryClient]);
 
   return {
     login,

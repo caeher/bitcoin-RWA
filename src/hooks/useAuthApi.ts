@@ -20,6 +20,7 @@ export const useAuthApi = () => {
   const login = useMutation({
     mutationFn: (data: LoginRequest) => api.post<AuthResponse>('/auth/login', data),
     onSuccess: () => {
+      queryClient.clear();
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
     }
   });
@@ -27,6 +28,7 @@ export const useAuthApi = () => {
   const register = useMutation({
     mutationFn: (data: RegisterRequest) => api.post<AuthResponse>('/auth/register', data),
     onSuccess: () => {
+      queryClient.clear();
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
     }
   });
@@ -34,6 +36,7 @@ export const useAuthApi = () => {
   const nostrLogin = useMutation({
     mutationFn: (data: NostrLoginRequest) => api.post<AuthResponse>('/auth/nostr', data),
     onSuccess: () => {
+      queryClient.clear();
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
     }
   });

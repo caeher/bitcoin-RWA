@@ -252,22 +252,30 @@ export function Onboarding() {
   };
 
   const handleKycComplete = async () => {
-    await submitKyc({ notes: 'KYC flow initiated from onboarding.' });
-    setKycStatus('pending');
+    try {
+      await submitKyc({ notes: 'KYC flow initiated from onboarding.' });
+      setKycStatus('pending');
+    } catch (error) {
+      // Error handled by api.ts
+    }
   };
 
   const handleLaunchProvider = async (providerId: string) => {
-    const response = await createSession({
-      provider_id: providerId,
-      fiat_currency: 'USD',
-      fiat_amount: 100,
-      country_code: 'US',
-      return_url: `${window.location.origin}/onboarding`,
-      cancel_url: `${window.location.origin}/onboarding`,
-    });
+    try {
+      const response = await createSession({
+        provider_id: providerId,
+        fiat_currency: 'USD',
+        fiat_amount: 100,
+        country_code: 'US',
+        return_url: `${window.location.origin}/onboarding`,
+        cancel_url: `${window.location.origin}/onboarding`,
+      });
 
-    success('Redirecting to provider', 'Continuing your fiat on-ramp flow.');
-    window.location.href = response.handoff_url;
+      success('Redirecting to provider', 'Continuing your fiat on-ramp flow.');
+      window.location.href = response.handoff_url;
+    } catch (error) {
+      // Error handled by api.ts
+    }
   };
 
   return (

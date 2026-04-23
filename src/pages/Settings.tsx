@@ -1,4 +1,6 @@
 import { FormEvent, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { QRCodeSVG } from 'qrcode.react';
 import {
   Copy,
   ShieldCheck,
@@ -13,6 +15,7 @@ import { formatDate, formatSats, truncateAddress } from '@lib/utils';
 export function Settings() {
   const authApi = useAuthApi();
   const walletApi = useWalletApi();
+  const queryClient = useQueryClient();
   const { success } = useNotificationStore();
 
   const { data: currentUser } = authApi.getCurrentUser();
@@ -32,26 +35,40 @@ export function Settings() {
 
   const handleKycSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    await submitKyc({
-      document_url: kycDocumentUrl || undefined,
-      notes: kycNotes || undefined,
-    });
-    success('KYC enviado', 'Tu solicitud fue enviada correctamente.');
-    setKycDocumentUrl('');
-    setKycNotes('');
+    try {
+      await submitKyc({
+        document_url: kycDocumentUrl || undefined,
+        notes: kycNotes || undefined,
+      });
+      success('KYC enviado', 'Tu solicitud fue enviada correctamente.');
+      setKycDocumentUrl('');
+      setKycNotes('');
+    } catch (error) {
+      // Error handled by api.ts
+    }
   };
 
   const handleEnableTwoFactor = async () => {
-    const response = await enableTwoFactor();
-    setTotpSetup(response);
+    try {
+      const response = await enableTwoFactor();
+      setTotpSetup(response);
+    } catch (error: any) {
+      if (error?.message?.includes('already enabled')) {
+        queryClient.invalidateQueries({ queryKey: ['custodyStatus'] });
+      }
+    }
   };
 
   const handleVerifyTwoFactor = async (event: FormEvent) => {
     event.preventDefault();
-    await verifyTwoFactor(totpCode);
-    success('2FA habilitado', 'La verificacion TOTP fue confirmada.');
-    setTotpCode('');
-    setTotpSetup(null);
+    try {
+      await verifyTwoFactor(totpCode);
+      success('2FA habilitado', 'La verificacion TOTP fue confirmada.');
+      setTotpCode('');
+      setTotpSetup(null);
+    } catch (error) {
+      // Error is handled by the api.ts interceptor showing a toast
+    }
   };
 
   return (
@@ -188,6 +205,9 @@ export function Settings() {
 
               {totpSetup && (
                 <form className="space-y-4" onSubmit={handleVerifyTwoFactor}>
+                  <div className="flex justify-center p-4 bg-white rounded-lg mx-auto w-fit">
+                    <QRCodeSVG value={totpSetup.totp_uri} size={200} />
+                  </div>
                   <Input label="TOTP URI" value={totpSetup.totp_uri} readOnly copyable />
                   <div className="rounded-lg bg-background-elevated p-4">
                     <p className="font-medium mb-3">Backup codes</p>

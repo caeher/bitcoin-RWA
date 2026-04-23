@@ -325,14 +325,18 @@ export function WalletDeposit() {
   }, [activeTab, createAddress, depositAddress]);
 
   const handleGenerateInvoice = async () => {
-    const amount = Math.max(1, Number(invoiceAmount) || 0);
-    const response = await createInvoice({
-      amount_sats: amount,
-      description: invoiceMemo || undefined,
-    });
+    try {
+      const amount = Math.max(1, Number(invoiceAmount) || 0);
+      const response = await createInvoice({
+        amount_sats: amount,
+        description: invoiceMemo || undefined,
+      });
 
-    success('Invoice created', 'Lightning invoice ready to receive payment.');
-    return response;
+      success('Invoice created', 'Lightning invoice ready to receive payment.');
+      return response;
+    } catch (error) {
+      // Error handled by api.ts
+    }
   };
 
   return (
@@ -453,19 +457,23 @@ export function WalletWithdraw() {
       return;
     }
 
-    if (destination.trim().toLowerCase().startsWith('ln')) {
-      const response = await payInvoice({ payment_request: destination.trim() });
-      success('Payment submitted', `Lightning payment status: ${response.status}.`);
-      return;
+    try {
+      if (destination.trim().toLowerCase().startsWith('ln')) {
+        const response = await payInvoice({ payment_request: destination.trim() });
+        success('Payment submitted', `Lightning payment status: ${response.status}.`);
+        return;
+      }
+
+      const response = await withdrawOnchain({
+        address: destination.trim(),
+        amount_sats: Math.max(1, Number(amount) || 0),
+        fee_rate: Math.max(1, Number(feeRate || fees?.economy_fee || 1)),
+      });
+
+      success('Withdrawal created', `Transaction ${truncateTxid(response.txid)} created successfully.`);
+    } catch (error) {
+      // Error handled by api.ts
     }
-
-    const response = await withdrawOnchain({
-      address: destination.trim(),
-      amount_sats: Math.max(1, Number(amount) || 0),
-      fee_rate: Math.max(1, Number(feeRate || fees?.economy_fee || 1)),
-    });
-
-    success('Withdrawal created', `Transaction ${truncateTxid(response.txid)} created successfully.`);
   };
 
   return (
