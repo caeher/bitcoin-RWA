@@ -131,7 +131,7 @@ export const useAuthApi = () => {
 
   const rotateApiKey = useMutation({
     mutationFn: (keyId: string) =>
-      api.post<ApiKeyCreateResponse>(`/auth/api-keys/${keyId}/rotate`),
+      api.patch<ApiKeyCreateResponse>(`/auth/api-keys/${keyId}/rotate`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['apiKeys'] });
     },

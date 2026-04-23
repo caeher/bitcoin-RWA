@@ -64,7 +64,7 @@ export const useWalletApi = () => {
         amount_sats: number;
         memo?: string | null;
         expiry?: number;
-      }>('/wallet/lightning/invoices', {
+      }>('/lightning/invoices', {
         amount_sats: data.amount_sats,
         memo: data.description,
       }),
@@ -72,7 +72,7 @@ export const useWalletApi = () => {
 
   const decodeBolt11 = useMutation({
     mutationFn: (paymentRequest: string) => 
-      api.post<Bolt11DecodeResponse>('/wallet/lightning/decode', { payment_request: paymentRequest }),
+      api.post<Bolt11DecodeResponse>('/lightning/decode', { payment_request: paymentRequest }),
   });
 
   const payInvoice = useMutation({
@@ -82,7 +82,7 @@ export const useWalletApi = () => {
         payment_preimage?: string | null;
         status: string;
         fee_sats?: number;
-      }>('/wallet/lightning/payments', data),
+      }>('/lightning/payments', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['walletSummary'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });

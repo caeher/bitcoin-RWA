@@ -26,10 +26,8 @@ import type { ApiKeyCreateResponse } from '@types';
 const apiScopeOptions = [
   'wallet:read',
   'wallet:write',
-  'marketplace:read',
   'marketplace:write',
   'tokenization:read',
-  'tokenization:write',
   'nostr:write',
 ];
 

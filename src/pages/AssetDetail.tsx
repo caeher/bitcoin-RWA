@@ -28,6 +28,7 @@ import {
 } from '@components';
 import { InputField, SelectField } from '@components/forms';
 import { useTokenizationApi } from '@hooks';
+import { useAuthStore } from '@stores';
 
 // Mocks removed
 
@@ -36,14 +37,16 @@ export function AssetDetail() {
   const [totalSupply, setTotalSupply] = useState('1000');
   const [unitPriceSat, setUnitPriceSat] = useState('1000');
   const [visibility, setVisibility] = useState<'public' | 'private'>('public');
-  const { data: asset, isLoading } = useTokenizationApi().getAssetDetail(id || '');
+  const { isAuthenticated, isSeller } = useAuthStore();
+  const canManageAsset = isAuthenticated && isSeller();
+  const { data: asset, isLoading } = useTokenizationApi().getAssetDetail(id || '', false);
   const { mutate: evaluate, isPending: isEvaluating } = useTokenizationApi().evaluateAsset;
   const { mutate: tokenize, isPending: isTokenizing } = useTokenizationApi().tokenizeAsset;
   const change24h = 2.3; // Mock tracking data
 
   if (isLoading) {
     return (
-      <Layout>
+      <Layout requireAuth={false}>
         <EmptyState
           variant="page"
           tone="warning"
@@ -56,7 +59,7 @@ export function AssetDetail() {
 
   if (!asset) {
     return (
-      <Layout>
+      <Layout requireAuth={false}>
         <EmptyState
           variant="page"
           title="Asset not found"
@@ -74,7 +77,7 @@ export function AssetDetail() {
   const isTokenized = asset.status === 'tokenized';
 
   return (
-    <Layout>
+    <Layout requireAuth={false}>
       <div className="space-y-6">
         {/* Back button */}
         <Link to="/assets">
@@ -238,12 +241,21 @@ export function AssetDetail() {
                     <p className="text-foreground-secondary mb-4">
                       This asset is currently {asset.status.replace('_', ' ')}.
                     </p>
-                    {asset.status === 'pending' && (
+                    {!canManageAsset ? (
+                      <div className="space-y-3">
+                        <p className="text-sm text-foreground-secondary">
+                          Sign in with a seller or admin account to evaluate or tokenize this asset.
+                        </p>
+                        <Link to="/auth/login">
+                          <Button fullWidth>Sign In</Button>
+                        </Link>
+                      </div>
+                    ) : asset.status === 'pending' && (
                        <Button fullWidth onClick={() => evaluate(asset.id)} isLoading={isEvaluating}>
                          Request AI Evaluation
                        </Button>
                     )}
-                    {asset.status === 'approved' && (
+                    {canManageAsset && asset.status === 'approved' && (
                       <div className="space-y-3">
                         <InputField
                           label="Total Supply"

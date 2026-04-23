@@ -60,6 +60,20 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function SellerRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isSeller } = useAuthStore();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/auth/login" replace />;
+  }
+
+  if (!isSeller()) {
+    return <Navigate to="/assets" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 // App content with auto-logout
 function AppContent() {
   useAutoLogout({ timeoutMinutes: 15 });
@@ -100,9 +114,9 @@ function AppContent() {
         <Route path="/assets" element={<Assets />} />
         <Route path="/assets/:id" element={<AssetDetail />} />
         <Route path="/assets/submit" element={
-          <ProtectedRoute>
+          <SellerRoute>
             <AssetSubmit />
-          </ProtectedRoute>
+          </SellerRoute>
         } />
 
         {/* Marketplace routes */}

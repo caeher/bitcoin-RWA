@@ -115,7 +115,7 @@ export function Assets() {
   const statusParam = selectedStatus === 'all' ? undefined : selectedStatus;
   const categoryParam = selectedCategory === 'all' ? undefined : selectedCategory;
   
-  const { data: assetsData, isLoading } = useTokenizationApi().getAssets(statusParam, categoryParam);
+  const { data: assetsData, isLoading } = useTokenizationApi().getAssets(statusParam, categoryParam, undefined, false);
   const assetsList = assetsData?.items || [];
 
   const filteredAssets = useMemo(() => {
@@ -130,7 +130,7 @@ export function Assets() {
   const totalValue = assetsList.reduce((sum, a) => sum + (a.token?.market_cap_sats || a.valuation_sat), 0);
 
   return (
-    <Layout>
+    <Layout requireAuth={false}>
       <div className="space-y-6">
         <SectionHeader
           title="Assets"
