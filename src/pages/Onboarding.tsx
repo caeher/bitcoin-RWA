@@ -7,14 +7,13 @@ import {
   ArrowRight,
   Lock,
   CreditCard,
-  Globe,
   Zap,
   UserCheck
 } from 'lucide-react';
 import { cn, formatSats } from '@lib/utils';
-import { Layout, Button, Card, CardContent, CardHeader, CardTitle, CardDescription, Badge } from '@components';
+import { Layout, Button, Card, CardContent, Badge } from '@components';
 import { CheckboxField } from '@components/forms';
-import type { FiatProvider } from '@types';
+import type { FiatOnRampProviderStatus, KycStatus } from '@types';
 import { useAuthApi, useWalletApi } from '@hooks';
 import { useNotificationStore } from '@stores';
 
@@ -79,9 +78,22 @@ function SecurityStep({ completed }: { completed: boolean }) {
   );
 }
 
-function KYCStep({ status, onComplete, isSubmitting }: { status: string; onComplete: () => void; isSubmitting: boolean }) {
+function KYCStep({
+  status,
+  submittedAt,
+  rejectionReason,
+  onComplete,
+  isSubmitting,
+}: {
+  status: KycStatus;
+  submittedAt?: string;
+  rejectionReason?: string | null;
+  onComplete: () => void;
+  isSubmitting: boolean;
+}) {
   const isVerified = status === 'verified';
   const isPending = status === 'pending';
+  const isRejected = status === 'rejected' || status === 'expired';
 
   if (isVerified) {
     return (
@@ -111,13 +123,27 @@ function KYCStep({ status, onComplete, isSubmitting }: { status: string; onCompl
         <div className="p-4 rounded-lg bg-background-elevated">
           <div className="flex items-center justify-between mb-2">
             <span className="font-medium">Current Status</span>
-            <Badge variant={isPending ? 'warning' : 'secondary'}>
+            <Badge variant={isPending ? 'warning' : isRejected ? 'danger' : 'secondary'}>
               {status === 'none' ? 'Not Started' : status}
             </Badge>
           </div>
           <p className="text-sm text-foreground-secondary">
-            Basic account with no verification required to start.
+            {isPending
+              ? 'Your verification request is under review.'
+              : isRejected
+              ? 'Your last verification attempt needs attention before you can continue.'
+              : 'Basic account with no verification required to start.'}
           </p>
+          {submittedAt && (
+            <p className="mt-2 text-xs text-foreground-secondary">
+              Submitted: {new Date(submittedAt).toLocaleString()}
+            </p>
+          )}
+          {rejectionReason && (
+            <p className="mt-2 text-xs text-accent-red">
+              Review note: {rejectionReason}
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -137,7 +163,7 @@ function KYCStep({ status, onComplete, isSubmitting }: { status: string; onCompl
           Skip for Now
         </Button>
         <Button fullWidth onClick={onComplete} isLoading={isSubmitting}>
-          Verify Identity
+          {isRejected ? 'Resubmit Verification' : 'Verify Identity'}
         </Button>
       </div>
     </div>
@@ -146,15 +172,20 @@ function KYCStep({ status, onComplete, isSubmitting }: { status: string; onCompl
 
 function FundingStep({
   providers,
+  kycStatus,
   onLaunch,
   isLaunching,
 }: {
-  providers: FiatProvider[];
+  providers: FiatOnRampProviderStatus[];
+  kycStatus: KycStatus;
   onLaunch: (providerId: string) => void;
   isLaunching: boolean;
 }) {
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
+  const selectedProviderData = providers.find((provider) => provider.id === selectedProvider);
+  const blockedByKyc = selectedProviderData?.requires_kyc && kycStatus !== 'verified';
+  const unavailable = selectedProviderData?.state === 'unavailable';
 
   return (
     <div className="space-y-6">
@@ -187,14 +218,41 @@ function FundingStep({
                 <p className="text-xs text-foreground-secondary">
                   {provider.supported_fiat_currencies.join(', ')}
                 </p>
+                {!!provider.disclaimer && (
+                  <p className="text-xs text-foreground-secondary mt-2">
+                    {provider.disclaimer}
+                  </p>
+                )}
               </div>
-              <Badge variant={provider.requires_kyc ? 'warning' : 'success'} size="sm">
-                {provider.requires_kyc ? 'KYC Required' : 'No KYC'}
-              </Badge>
+              <div className="flex flex-col items-end gap-2">
+                <Badge variant={provider.requires_kyc ? 'warning' : 'success'} size="sm">
+                  {provider.requires_kyc ? 'KYC Required' : 'No KYC'}
+                </Badge>
+                {provider.state && (
+                  <span className="text-xs text-foreground-secondary capitalize">{provider.state.replace('_', ' ')}</span>
+                )}
+              </div>
             </div>
           </button>
         ))}
       </div>
+
+      {selectedProviderData && (
+        <div className="p-4 rounded-lg bg-background-elevated space-y-2">
+          <p className="font-medium">{selectedProviderData.name}</p>
+          <p className="text-sm text-foreground-secondary">
+            Countries: {selectedProviderData.supported_countries.join(', ') || 'Not specified'}
+          </p>
+          {selectedProviderData.disabled_reason && (
+            <p className="text-sm text-accent-red">{selectedProviderData.disabled_reason}</p>
+          )}
+          {blockedByKyc && (
+            <p className="text-sm text-accent-bitcoin">
+              Complete KYC first to continue with this provider.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Disclaimer */}
       <CheckboxField
@@ -205,7 +263,7 @@ function FundingStep({
 
       <Button 
         fullWidth 
-        disabled={!selectedProvider || !agreed}
+        disabled={!selectedProvider || !agreed || blockedByKyc || unavailable}
         isLoading={isLaunching}
         onClick={() => selectedProvider && onLaunch(selectedProvider)}
         leftIcon={<Zap size={18} />}
@@ -224,18 +282,21 @@ export function Onboarding() {
   const { data: custodyData } = useWalletApi().getCustodyStatus();
   const { data: fiatData } = useWalletApi().getFiatProviders();
   const { mutateAsync: createSession, isPending: isLaunchingProvider } = useWalletApi().createFiatSession;
+  const { data: onboardingSummary } = useAuthApi().getOnboardingSummary();
   const { data: kycData } = useAuthApi().getKycStatus();
   const { mutateAsync: submitKyc, isPending: isSubmittingKyc } = useAuthApi().submitKyc;
-  const [kycStatus, setKycStatus] = useState(kycData?.status || 'none');
+  const [kycStatus, setKycStatus] = useState<KycStatus>(kycData?.status || onboardingSummary?.kyc_status || 'none');
 
   useEffect(() => {
     if (kycData?.status) {
       setKycStatus(kycData.status);
+    } else if (onboardingSummary?.kyc_status) {
+      setKycStatus(onboardingSummary.kyc_status);
     }
-  }, [kycData?.status]);
+  }, [kycData?.status, onboardingSummary?.kyc_status]);
 
   const custodyConfigured = custodyData?.state === 'ready';
-  const availableProviders = fiatData?.providers || [];
+  const availableProviders = onboardingSummary?.fiat_onramp_providers || fiatData?.providers || [];
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
@@ -315,13 +376,16 @@ export function Onboarding() {
             {currentStep === 1 && (
               <KYCStep
                 status={kycStatus}
+                submittedAt={kycData?.created_at}
+                rejectionReason={kycData?.rejection_reason}
                 onComplete={handleKycComplete}
                 isSubmitting={isSubmittingKyc}
               />
             )}
             {currentStep === 2 && (
               <FundingStep
-                providers={availableProviders as any[]}
+                providers={availableProviders}
+                kycStatus={kycStatus}
                 onLaunch={handleLaunchProvider}
                 isLaunching={isLaunchingProvider}
               />

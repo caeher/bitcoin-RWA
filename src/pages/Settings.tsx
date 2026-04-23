@@ -99,8 +99,8 @@ export function Settings() {
                 <StatTile
                   label="KYC"
                   value={
-                    <Badge variant={kyc?.status === 'verified' ? 'success' : 'warning'}>
-                      {kyc?.status || 'none'}
+                    <Badge variant={(kyc?.status || onboarding?.kyc_status) === 'verified' ? 'success' : 'warning'}>
+                      {kyc?.status || onboarding?.kyc_status || 'none'}
                     </Badge>
                   }
                   size="sm"
@@ -111,6 +111,7 @@ export function Settings() {
                 <p>Creado: {currentUser?.created_at ? formatDate(currentUser.created_at, false) : '--'}</p>
                 <p>Custodia: {custody?.wallet_backend || '--'}</p>
                 <p>2FA en retiros: {custody?.withdraw_requires_2fa ? 'habilitado' : 'pendiente'}</p>
+                <p>Referral code: {currentUser?.referral_code || referral?.referral_code || '--'}</p>
               </div>
 
               <p className="text-xs text-foreground-secondary">
@@ -133,7 +134,7 @@ export function Settings() {
                 />
                 <StatTile
                   label="Custody"
-                  value={onboarding?.custody_configured ? 'ready' : 'pending'}
+                  value={onboarding?.custody?.state || 'pending'}
                   valueClassName="capitalize"
                 />
                 <StatTile label="Fiat providers" value={onboarding?.fiat_onramp_providers?.length || 0} />
@@ -154,9 +155,20 @@ export function Settings() {
                   placeholder="Informacion adicional para el equipo de revision"
                 />
                 <Button type="submit" isLoading={isSubmittingKyc}>
-                  Enviar KYC
+                  {kyc?.status === 'rejected' || kyc?.status === 'expired' ? 'Reenviar KYC' : 'Enviar KYC'}
                 </Button>
               </form>
+
+              {(kyc?.created_at || kyc?.updated_at || kyc?.rejection_reason || kyc?.document_url) && (
+                <div className="rounded-lg border border-border bg-background-elevated p-4 text-sm text-foreground-secondary space-y-2">
+                  <p className="font-medium text-foreground">Estado detallado de KYC</p>
+                  {kyc?.document_url && <p>Documento: {kyc.document_url}</p>}
+                  {kyc?.created_at && <p>Enviado: {formatDate(kyc.created_at, false)}</p>}
+                  {kyc?.updated_at && <p>Ultima actualizacion: {formatDate(kyc.updated_at, false)}</p>}
+                  {kyc?.rejection_reason && <p className="text-accent-red">Motivo: {kyc.rejection_reason}</p>}
+                  {kyc?.notes && <p>Notas: {kyc.notes}</p>}
+                </div>
+              )}
 
               {!!onboarding?.compliance_notices?.length && (
                 <div className="space-y-2">

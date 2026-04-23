@@ -5,6 +5,7 @@ export interface User {
   display_name: string;
   role: 'user' | 'seller' | 'admin' | 'auditor';
   kyc_status?: 'none' | 'pending' | 'verified' | 'rejected' | 'expired';
+  referral_code?: string | null;
   created_at: string;
   nostr_pubkey?: string;
 }
@@ -393,21 +394,44 @@ export interface YieldAccrual {
 
 // Onboarding types
 export interface OnboardingSummary {
-  custody_configured: boolean;
-  kyc_status: 'none' | 'pending' | 'verified' | 'rejected';
-  kyc_provider_required: boolean;
-  fiat_onramp_ready: boolean;
-  available_providers: FiatProvider[];
+  user: User;
+  kyc_status: KycStatus;
+  custody: OnboardingCustody;
+  fiat_onramp_providers: FiatOnRampProviderStatus[];
+  compliance_notices: string[];
 }
 
-export interface FiatProvider {
+export interface OnboardingCustody {
+  configured_backend: 'software' | 'hsm';
+  signer_backend: 'software' | 'hsm';
+  state: 'ready' | 'degraded';
+  key_reference?: string | null;
+  signer_key_reference?: string | null;
+  seed_exportable: boolean;
+  server_compromise_impact: string;
+  disclaimers: string[];
+}
+
+export type KycStatus = 'none' | 'pending' | 'verified' | 'rejected' | 'expired';
+
+export interface KycRecord {
   id: string;
-  name: string;
-  logo_url: string;
-  supported_fiat_currencies: string[];
-  supported_countries: string[];
-  requires_kyc: boolean;
-  disabled_reason?: string;
+  user_id: string;
+  status: Exclude<KycStatus, 'none'>;
+  document_url?: string | null;
+  rejection_reason?: string | null;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KycStatusResponse {
+  kyc: KycRecord;
+}
+
+export interface KycSubmitRequest {
+  document_url?: string;
+  notes?: string;
 }
 
 export interface TwoFactorEnableResponse {

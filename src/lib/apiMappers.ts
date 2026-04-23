@@ -36,6 +36,7 @@ export const mapUser = (raw: any): User => ({
   display_name: raw.display_name,
   role: raw.role,
   kyc_status: raw.kyc_status,
+  referral_code: raw.referral_code ?? null,
   created_at: raw.created_at,
   nostr_pubkey: raw.nostr_pubkey ?? undefined,
 });

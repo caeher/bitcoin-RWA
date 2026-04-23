@@ -1,12 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@lib/api';
-import { mapUser } from '@lib/apiMappers';
+import { ApiError, api } from '@lib/api';
+import { mapFiatProvider, mapUser } from '@lib/apiMappers';
 import type { 
   ApiKey,
   ApiKeyCreateRequest,
   ApiKeyCreateResponse,
   AuthResponse, 
+  KycStatusResponse,
+  KycSubmitRequest,
   LoginRequest, 
+  OnboardingSummary,
   ReferralSummaryResponse,
   RegisterRequest, 
   NostrLoginRequest,
@@ -58,27 +61,35 @@ export const useAuthApi = () => {
   const getKycStatus = () => useQuery({
     queryKey: ['kycStatus'],
     queryFn: async () => {
-      const response = await api.get<{ kyc: { status: User['kyc_status'] } }>('/auth/kyc/status');
-      return response.kyc;
+      try {
+        const response = await api.get<KycStatusResponse>('/auth/kyc/status', { skipErrorToast: true });
+        return response.kyc;
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+          return null;
+        }
+        throw error;
+      }
     },
   });
 
   const submitKyc = useMutation({
-    mutationFn: (data: { document_url?: string; notes?: string }) =>
-      api.post<{ kyc: { status: User['kyc_status'] } }>('/auth/kyc/submit', data),
+    mutationFn: (data: KycSubmitRequest) =>
+      api.post<KycStatusResponse>('/auth/kyc/submit', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kycStatus'] });
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      queryClient.invalidateQueries({ queryKey: ['onboardingSummary'] });
     },
   });
 
   const getOnboardingSummary = () => useQuery({
     queryKey: ['onboardingSummary'],
-    queryFn: async () => {
+    queryFn: async (): Promise<OnboardingSummary> => {
       const response = await api.get<{
         user: User;
-        kyc_status: User['kyc_status'];
-        custody: { state: string };
+        kyc_status: NonNullable<User['kyc_status']>;
+        custody: OnboardingSummary['custody'];
         fiat_onramp_providers: any[];
         compliance_notices: string[];
       }>('/auth/onboarding/summary');
@@ -86,8 +97,8 @@ export const useAuthApi = () => {
       return {
         user: mapUser(response.user),
         kyc_status: response.kyc_status,
-        custody_configured: response.custody?.state === 'ready',
-        fiat_onramp_providers: response.fiat_onramp_providers,
+        custody: response.custody,
+        fiat_onramp_providers: (response.fiat_onramp_providers || []).map(mapFiatProvider),
         compliance_notices: response.compliance_notices || [],
       };
     },
