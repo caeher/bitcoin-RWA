@@ -1,5 +1,7 @@
 # RWA Tokenization Platform - Frontend
 
+NOTE: do not modify api directory, it is auto-generated from OpenAPI spec. For API changes, update the OpenAPI spec and regenerate.
+
 Web application and PWA for the RWA Tokenization Platform on Bitcoin.
 
 ## Design Aesthetic

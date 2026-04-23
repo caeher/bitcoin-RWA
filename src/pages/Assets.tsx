@@ -14,6 +14,7 @@ import { Button } from '@components/ui/Button';
 import { Badge } from '@components/ui/Badge';
 import { EmptyState } from '@components/ui/EmptyState';
 import { SectionHeader } from '@components/ui/SectionHeader';
+import { InputField, SelectField } from '@components/forms';
 import { useTokenizationApi } from '@hooks';
 import type { Asset } from '../types';
 
@@ -148,36 +149,17 @@ export function Assets() {
           <CardContent className="p-4">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-secondary" size={18} />
-                  <input
-                    type="text"
-                    placeholder="Search assets..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 rounded-lg bg-background-elevated border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-accent-bitcoin/50"
-                  />
-                </div>
+                <InputField
+                  type="text"
+                  placeholder="Search assets..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  leftElement={<Search size={18} />}
+                />
               </div>
               <div className="flex gap-2">
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="px-4 py-2 rounded-lg bg-background-elevated border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent-bitcoin/50"
-                >
-                  {categories.map(cat => (
-                    <option key={cat.value} value={cat.value}>{cat.label}</option>
-                  ))}
-                </select>
-                <select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="px-4 py-2 rounded-lg bg-background-elevated border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent-bitcoin/50"
-                >
-                  {statuses.map(status => (
-                    <option key={status.value} value={status.value}>{status.label}</option>
-                  ))}
-                </select>
+                <SelectField value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} options={categories} />
+                <SelectField value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)} options={statuses} />
               </div>
             </div>
           </CardContent>

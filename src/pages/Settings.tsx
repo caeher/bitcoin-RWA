@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Layout } from '@components/specialized';
 import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, SectionHeader, StatTile } from '@components/ui';
+import { TextareaField } from '@components/forms';
 import { useAuthApi, useWalletApi } from '@hooks';
 import { useNotificationStore } from '@stores';
 import { formatDate, formatSats, truncateAddress } from '@lib/utils';
@@ -145,16 +146,13 @@ export function Settings() {
                   value={kycDocumentUrl}
                   onChange={(event) => setKycDocumentUrl(event.target.value)}
                 />
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Notas</label>
-                  <textarea
-                    value={kycNotes}
-                    onChange={(event) => setKycNotes(event.target.value)}
-                    rows={4}
-                    className="w-full rounded-md border border-border bg-background-elevated px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-bitcoin/50"
-                    placeholder="Informacion adicional para el equipo de revision"
-                  />
-                </div>
+                <TextareaField
+                  label="Notas"
+                  value={kycNotes}
+                  onChange={(event) => setKycNotes(event.target.value)}
+                  rows={4}
+                  placeholder="Informacion adicional para el equipo de revision"
+                />
                 <Button type="submit" isLoading={isSubmittingKyc}>
                   Enviar KYC
                 </Button>

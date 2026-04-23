@@ -22,6 +22,7 @@ import { EmptyState } from '@components/ui/EmptyState';
 import { InfoRow } from '@components/ui/InfoRow';
 import { SectionHeader } from '@components/ui/SectionHeader';
 import { StatTile } from '@components/ui/StatTile';
+import { InputField, TextareaField } from '@components/forms';
 import { useNotificationStore, useWalletStore } from '@stores';
 import { useWalletApi, useTokenizationApi } from '@hooks';
 import type { Transaction, TokenBalance } from '@types';
@@ -392,29 +393,15 @@ export function WalletDeposit() {
               <div className="space-y-4">
                 {!invoiceData?.payment_request ? (
                   <>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        Amount (sats)
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={invoiceAmount}
-                        onChange={(e) => setInvoiceAmount(e.target.value)}
-                        className="w-full rounded-lg border border-border bg-background-elevated px-3 py-2 font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        Memo
-                      </label>
-                      <input
-                        type="text"
-                        value={invoiceMemo}
-                        onChange={(e) => setInvoiceMemo(e.target.value)}
-                        className="w-full rounded-lg border border-border bg-background-elevated px-3 py-2"
-                      />
-                    </div>
+                    <InputField
+                      label="Amount (sats)"
+                      type="number"
+                      min="1"
+                      value={invoiceAmount}
+                      onChange={(e) => setInvoiceAmount(e.target.value)}
+                      className="font-mono"
+                    />
+                    <InputField label="Memo" type="text" value={invoiceMemo} onChange={(e) => setInvoiceMemo(e.target.value)} />
                     <Button onClick={handleGenerateInvoice} isLoading={isCreatingInvoice}>
                       Generate Invoice
                     </Button>
@@ -492,60 +479,46 @@ export function WalletWithdraw() {
           </CardHeader>
           <CardContent>
             <form className="space-y-6" onSubmit={handleSubmit}>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Destination
-                </label>
-                <textarea
-                  placeholder="bc1q... or lnbc1..."
-                  value={destination}
-                  onChange={(e) => setDestination(e.target.value)}
-                  className="w-full p-3 rounded-lg bg-background-elevated border border-border text-foreground font-mono text-sm focus:outline-none focus:ring-2 focus:ring-accent-bitcoin/50"
-                  rows={3}
-                />
-              </div>
+              <TextareaField
+                label="Destination"
+                placeholder="bc1q... or lnbc1..."
+                value={destination}
+                onChange={(e) => setDestination(e.target.value)}
+                className="font-mono text-sm"
+                rows={3}
+              />
 
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Amount (sats)
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    placeholder="0"
-                    min="1"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="w-full p-3 rounded-lg bg-background-elevated border border-border text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-accent-bitcoin/50"
-                  />
-                  <Button 
+              <InputField
+                label="Amount (sats)"
+                type="number"
+                placeholder="0"
+                min="1"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="pr-24 font-mono"
+                rightElement={
+                  <Button
                     type="button"
-                    variant="ghost" 
-                    size="sm" 
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setAmount(String(available))}
-                    className="absolute right-2 top-1/2 -translate-y-1/2"
+                    className="h-7 px-2"
                   >
                     Max
                   </Button>
-                </div>
-                <p className="text-xs text-foreground-secondary mt-1">
-                  Available: {formatSats(available)} sats
-                </p>
-              </div>
+                }
+                helperText={`Available: ${formatSats(available)} sats`}
+              />
 
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Fee Rate (sat/vB)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={feeRate}
-                  onChange={(e) => setFeeRate(e.target.value)}
-                  placeholder={String(fees?.economy_fee || 1)}
-                  className="w-full p-3 rounded-lg bg-background-elevated border border-border text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-accent-bitcoin/50"
-                />
-              </div>
+              <InputField
+                label="Fee Rate (sat/vB)"
+                type="number"
+                min="1"
+                value={feeRate}
+                onChange={(e) => setFeeRate(e.target.value)}
+                placeholder={String(fees?.economy_fee || 1)}
+                className="font-mono"
+              />
 
               <div className="p-4 rounded-lg bg-background-elevated">
                 <div className="flex justify-between text-sm mb-2">

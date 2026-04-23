@@ -10,11 +10,36 @@ export {
   CardFooter,
   Input,
   Badge,
+  SegmentedControl,
   SectionHeader,
   EmptyState,
   StatTile,
   InfoRow,
 } from './ui';
+
+// Form Components
+export {
+  FieldShell,
+  InputField,
+  TextareaField,
+  SelectField,
+  DateField,
+  CheckboxField,
+  RadioField,
+  ComboboxField,
+} from './forms';
+export type {
+  FieldShellProps,
+  InputFieldProps,
+  TextareaFieldProps,
+  SelectFieldOption,
+  SelectFieldProps,
+  DateFieldProps,
+  CheckboxFieldProps,
+  RadioFieldOption,
+  RadioFieldProps,
+  ComboboxFieldProps,
+} from './forms';
 
 // Specialized Components
 export {
@@ -27,5 +52,17 @@ export {
   OrderBookDepth,
   CopyButton,
   ToastContainer,
+  DepositAddress,
   Layout,
+  TradingPairHeader,
+  TradingChartCard,
+  TradingOrderBookCard,
+  TradingOrderForm,
+  RecentTradesCard,
+  OpenOrdersCard,
+  DashboardBalanceCard,
+  PortfolioBreakdownCard,
+  PortfolioTableCard,
+  ActivityFeedCard,
+  MarketplaceOpenOrdersCard,
 } from './specialized';

@@ -14,6 +14,7 @@ import {
   SectionHeader,
   StatTile,
 } from '@components';
+import { InputField } from '@components/forms';
 import { useAdminApi } from '@hooks';
 
 const tabs = [
@@ -65,14 +66,13 @@ function UsersTab() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>User Management</CardTitle>
-        <div className="relative w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-secondary" size={16} />
-          <input
+        <div className="w-64">
+          <InputField
             type="text"
             placeholder="Search users..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 rounded-lg bg-background-elevated border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent-bitcoin/50"
+            leftElement={<Search size={16} />}
           />
         </div>
       </CardHeader>
@@ -160,25 +160,8 @@ function TreasuryTab() {
       </CardHeader>
       <CardContent>
         <form className="space-y-4" onSubmit={handleDisburse}>
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Amount (sats)</label>
-            <input
-              type="number"
-              min="1"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-full rounded-lg border border-border bg-background-elevated px-3 py-2 font-mono"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Description</label>
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full rounded-lg border border-border bg-background-elevated px-3 py-2"
-            />
-          </div>
+          <InputField label="Amount (sats)" type="number" min="1" value={amount} onChange={(e) => setAmount(e.target.value)} className="font-mono" />
+          <InputField label="Description" type="text" value={description} onChange={(e) => setDescription(e.target.value)} />
           <Button type="submit" isLoading={isPending}>
             <Send size={14} className="mr-1" />
             Submit Disbursement

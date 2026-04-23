@@ -9,7 +9,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { cn } from '@lib/utils';
-import { Layout, Button, Card, CardContent, CardHeader, CardTitle, CardDescription, Input, Badge } from '@components';
+import { Layout, Button, Card, CardContent, CardHeader, CardTitle, CardDescription, Input, InputField, Badge, SelectField, TextareaField } from '@components';
 import { useTokenizationApi } from '@hooks';
 
 const steps = [
@@ -156,61 +156,39 @@ export function AssetSubmit() {
                   required
                 />
 
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    placeholder="Describe your asset in detail..."
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="w-full h-32 p-3 rounded-lg bg-background-elevated border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-accent-bitcoin/50 resize-none"
-                    required
-                  />
-                </div>
+                <TextareaField
+                  label="Description"
+                  placeholder="Describe your asset in detail..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="h-32 resize-none"
+                  required
+                />
 
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Category
-                  </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full p-3 rounded-lg bg-background-elevated border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-accent-bitcoin/50"
-                    required
-                  >
-                    <option value="">Select a category</option>
-                    {categories.map(cat => (
-                      <option key={cat.value} value={cat.value}>{cat.label}</option>
-                    ))}
-                  </select>
-                </div>
+                <SelectField
+                  label="Category"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  required
+                  placeholder="Select a category"
+                  options={categories}
+                />
               </div>
             )}
 
             {currentStep === 1 && (
               <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Estimated Value (sats)
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      placeholder="0"
-                      value={estimatedValue}
-                      onChange={(e) => setEstimatedValue(e.target.value)}
-                      className="w-full p-3 rounded-lg bg-background-elevated border border-border text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-accent-bitcoin/50"
-                      required
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-foreground-secondary text-sm">
-                      sats
-                    </span>
-                  </div>
-                  <p className="text-xs text-foreground-secondary mt-1">
-                    Estimated value helps with initial evaluation
-                  </p>
-                </div>
+                <InputField
+                  label="Estimated Value (sats)"
+                  type="number"
+                  placeholder="0"
+                  value={estimatedValue}
+                  onChange={(e) => setEstimatedValue(e.target.value)}
+                  className="font-mono"
+                  rightElement={<span className="text-sm">sats</span>}
+                  helperText="Estimated value helps with initial evaluation"
+                  required
+                />
 
                 <Input
                   label="Supporting Documents URL"

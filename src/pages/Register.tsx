@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Bitcoin, Check, X } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Bitcoin, Check, X } from 'lucide-react';
 import { cn } from '@lib/utils';
 import { Button } from '@components/ui/Button';
 import { Input } from '@components/ui/Input';
+import { CheckboxField } from '@components/forms';
 import { useAuth } from '@hooks';
 
 const steps = [
@@ -24,7 +25,6 @@ export function Register() {
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   // Password strength
@@ -179,33 +179,15 @@ export function Register() {
 
               {/* Password input */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">
-                  Password
-                </label>
-                <div className="relative">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-secondary">
-                    <Lock size={18} />
-                  </div>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={cn(
-                      'flex w-full rounded-md border border-border bg-background-elevated pl-10 pr-10 py-2 text-sm text-foreground',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-bitcoin/50',
-                      'placeholder:text-foreground-muted'
-                    )}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground-secondary hover:text-foreground"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
+                <Input
+                  label="Password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  leftElement={<Lock size={18} />}
+                  isPassword
+                  required
+                />
 
                 {/* Password strength */}
                 {password.length > 0 && (
@@ -249,52 +231,34 @@ export function Register() {
               </div>
 
               {/* Confirm password */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-secondary">
-                    <Lock size={18} />
-                  </div>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className={cn(
-                      'flex w-full rounded-md border border-border bg-background-elevated pl-10 pr-3 py-2 text-sm text-foreground',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-bitcoin/50',
-                      'placeholder:text-foreground-muted',
-                      confirmPassword && confirmPassword !== password && 'border-accent-red focus-visible:ring-accent-red/50'
-                    )}
-                    required
-                  />
-                </div>
-                {confirmPassword && confirmPassword !== password && (
-                  <p className="mt-1 text-sm text-accent-red">Passwords do not match</p>
-                )}
-              </div>
+              <Input
+                label="Confirm Password"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                leftElement={<Lock size={18} />}
+                isPassword
+                error={confirmPassword && confirmPassword !== password ? 'Passwords do not match' : undefined}
+                required
+              />
 
               {/* Terms */}
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={agreedToTerms}
-                  onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="mt-1 rounded border-border bg-background-elevated text-accent-bitcoin focus:ring-accent-bitcoin/50"
-                />
-                <span className="text-sm text-foreground-secondary">
-                  I agree to the{' '}
-                  <Link to="/terms" className="text-accent-bitcoin hover:underline">
-                    Terms of Service
-                  </Link>{' '}
-                  and{' '}
-                  <Link to="/privacy" className="text-accent-bitcoin hover:underline">
-                    Privacy Policy
-                  </Link>
-                </span>
-              </label>
+              <CheckboxField
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                description={
+                  <>
+                    I agree to the{' '}
+                    <Link to="/terms" className="text-accent-bitcoin hover:underline">
+                      Terms of Service
+                    </Link>{' '}
+                    and{' '}
+                    <Link to="/privacy" className="text-accent-bitcoin hover:underline">
+                      Privacy Policy
+                    </Link>
+                  </>
+                }
+              />
 
               {error && (
                 <div className="p-3 rounded-md bg-accent-red/10 border border-accent-red/20 text-accent-red text-sm">

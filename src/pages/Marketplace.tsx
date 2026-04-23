@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { cn, formatSats, formatPercentage, formatNumber } from '@lib/utils';
 import { Layout, Badge, Button, Card, CardContent, CardHeader, CardTitle, EmptyState, SectionHeader, StatTile } from '@components';
+import { InputField, SelectField } from '@components/forms';
 import type { AssetTokenOut, Asset } from '@types';
 
 // Mock data
@@ -223,25 +224,24 @@ export function Marketplace() {
         <Card>
           <CardContent className="p-4">
             <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-secondary" size={18} />
-                <input
+              <div className="flex-1">
+                <InputField
                   type="text"
                   placeholder="Search tokens..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 rounded-lg bg-background-elevated border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-accent-bitcoin/50"
+                  leftElement={<Search size={18} />}
                 />
               </div>
-              <select
+              <SelectField
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                className="px-4 py-2 rounded-lg bg-background-elevated border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent-bitcoin/50"
-              >
-                <option value="volume">Sort by Volume</option>
-                <option value="price">Sort by Price</option>
-                <option value="change">Sort by 24h Change</option>
-              </select>
+                options={[
+                  { value: 'volume', label: 'Sort by Volume' },
+                  { value: 'price', label: 'Sort by Price' },
+                  { value: 'change', label: 'Sort by 24h Change' },
+                ]}
+              />
             </div>
           </CardContent>
         </Card>

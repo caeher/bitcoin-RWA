@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { cn, formatSats } from '@lib/utils';
 import { Layout, Button, Card, CardContent, CardHeader, CardTitle, CardDescription, Badge } from '@components';
+import { CheckboxField } from '@components/forms';
 import type { FiatProvider } from '@types';
 import { useAuthApi, useWalletApi } from '@hooks';
 import { useNotificationStore } from '@stores';
@@ -196,18 +197,11 @@ function FundingStep({
       </div>
 
       {/* Disclaimer */}
-      <label className="flex items-start gap-3 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={agreed}
-          onChange={(e) => setAgreed(e.target.checked)}
-          className="mt-1 rounded border-border bg-background-elevated text-accent-bitcoin"
-        />
-        <span className="text-sm text-foreground-secondary">
-          I understand that I will be redirected to a third-party provider. 
-          The provider's terms, pricing, and compliance policies apply.
-        </span>
-      </label>
+      <CheckboxField
+        checked={agreed}
+        onChange={(e) => setAgreed(e.target.checked)}
+        description="I understand that I will be redirected to a third-party provider. The provider's terms, pricing, and compliance policies apply."
+      />
 
       <Button 
         fullWidth 

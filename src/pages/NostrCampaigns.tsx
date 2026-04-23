@@ -14,6 +14,7 @@ import {
   SectionHeader,
   StatTile,
 } from '@components/ui';
+import { CheckboxField, DateField, SelectField, TextareaField } from '@components/forms';
 import { useNostrApi } from '@hooks';
 import { formatDate, formatSats, truncateAddress } from '@lib/utils';
 import { useNotificationStore } from '@stores';
@@ -252,17 +253,15 @@ export function NostrCampaigns() {
                 />
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Funding mode</label>
-                    <select
-                      value={fundingMode}
-                      onChange={(event) => setFundingMode(event.target.value as 'intraledger' | 'external')}
-                      className="w-full rounded-md border border-border bg-background-elevated px-3 py-2 text-sm text-foreground"
-                    >
-                      <option value="intraledger">intraledger</option>
-                      <option value="external">external</option>
-                    </select>
-                  </div>
+                  <SelectField
+                    label="Funding mode"
+                    value={fundingMode}
+                    onChange={(event) => setFundingMode(event.target.value as 'intraledger' | 'external')}
+                    options={[
+                      { value: 'intraledger', label: 'intraledger' },
+                      { value: 'external', label: 'external' },
+                    ]}
+                  />
                   <Input
                     label="Max per user"
                     type="number"
@@ -292,18 +291,8 @@ export function NostrCampaigns() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <Input
-                    label="Inicio"
-                    type="datetime-local"
-                    value={startAt}
-                    onChange={(event) => setStartAt(event.target.value)}
-                  />
-                  <Input
-                    label="Fin"
-                    type="datetime-local"
-                    value={endAt}
-                    onChange={(event) => setEndAt(event.target.value)}
-                  />
+                  <DateField label="Inicio" mode="datetime-local" value={startAt} onChange={(event) => setStartAt(event.target.value)} />
+                  <DateField label="Fin" mode="datetime-local" value={endAt} onChange={(event) => setEndAt(event.target.value)} />
                 </div>
 
                 <div className="space-y-3">
@@ -318,32 +307,30 @@ export function NostrCampaigns() {
                   {triggers.map((trigger, index) => (
                     <div key={`trigger-${index}`} className="rounded-lg border border-border p-3 space-y-3">
                       <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-medium text-foreground-secondary mb-1">Trigger type</label>
-                          <select
-                            value={trigger.trigger_type}
-                            onChange={(event) => handleTriggerChange(index, 'trigger_type', event.target.value)}
-                            className="w-full rounded-md border border-border bg-background-elevated px-3 py-2 text-sm text-foreground"
-                          >
-                            <option value="hashtag">hashtag</option>
-                            <option value="tag">tag</option>
-                            <option value="content_substring">content_substring</option>
-                            <option value="author_pubkey">author_pubkey</option>
-                            <option value="event_kind">event_kind</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-foreground-secondary mb-1">Operator</label>
-                          <select
-                            value={trigger.operator || 'equals'}
-                            onChange={(event) => handleTriggerChange(index, 'operator', event.target.value)}
-                            className="w-full rounded-md border border-border bg-background-elevated px-3 py-2 text-sm text-foreground"
-                          >
-                            <option value="equals">equals</option>
-                            <option value="contains">contains</option>
-                            <option value="in">in</option>
-                          </select>
-                        </div>
+                        <SelectField
+                          label="Trigger type"
+                          labelClassName="text-xs font-medium text-foreground-secondary mb-1"
+                          value={trigger.trigger_type}
+                          onChange={(event) => handleTriggerChange(index, 'trigger_type', event.target.value)}
+                          options={[
+                            { value: 'hashtag', label: 'hashtag' },
+                            { value: 'tag', label: 'tag' },
+                            { value: 'content_substring', label: 'content_substring' },
+                            { value: 'author_pubkey', label: 'author_pubkey' },
+                            { value: 'event_kind', label: 'event_kind' },
+                          ]}
+                        />
+                        <SelectField
+                          label="Operator"
+                          labelClassName="text-xs font-medium text-foreground-secondary mb-1"
+                          value={trigger.operator || 'equals'}
+                          onChange={(event) => handleTriggerChange(index, 'operator', event.target.value)}
+                          options={[
+                            { value: 'equals', label: 'equals' },
+                            { value: 'contains', label: 'contains' },
+                            { value: 'in', label: 'in' },
+                          ]}
+                        />
                       </div>
 
                       <Input
@@ -355,14 +342,13 @@ export function NostrCampaigns() {
                       />
 
                       <div className="flex items-center justify-between">
-                        <label className="flex items-center gap-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={!!trigger.case_sensitive}
-                            onChange={(event) => handleTriggerChange(index, 'case_sensitive', event.target.checked)}
-                          />
-                          Case sensitive
-                        </label>
+                        <CheckboxField
+                          checked={!!trigger.case_sensitive}
+                          onChange={(event) => handleTriggerChange(index, 'case_sensitive', event.target.checked)}
+                          label="Case sensitive"
+                          className="items-center gap-2"
+                          checkboxClassName="mt-0"
+                        />
                         {triggers.length > 1 && (
                           <Button type="button" variant="ghost" size="sm" onClick={() => setTriggers((current) => current.filter((_, currentIndex) => currentIndex !== index))}>
                             <Trash2 size={14} className="mr-1" />
@@ -437,11 +423,11 @@ export function NostrCampaigns() {
                       {latestExternalFunding?.campaignId === campaign.id && latestExternalFunding.funding.payment_request && (
                         <div className="rounded-lg border border-accent-bitcoin/20 bg-accent-bitcoin/10 p-4 space-y-2">
                           <p className="font-medium">Invoice externa lista</p>
-                          <textarea
+                          <TextareaField
                             readOnly
                             value={latestExternalFunding.funding.payment_request || ''}
                             rows={3}
-                            className="w-full rounded-md border border-border bg-background-elevated px-3 py-2 text-sm font-mono text-foreground"
+                            className="min-h-0 font-mono"
                           />
                           <p className="text-xs text-foreground-secondary">
                             Payment hash: {latestExternalFunding.funding.payment_hash || '--'}

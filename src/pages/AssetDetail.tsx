@@ -26,6 +26,7 @@ import {
   SectionHeader,
   StatTile,
 } from '@components';
+import { InputField } from '@components/forms';
 import { useTokenizationApi } from '@hooks';
 import type { Asset } from '@types';
 
@@ -225,30 +226,24 @@ export function AssetDetail() {
                     )}
                     {asset.status === 'approved' && (
                       <div className="space-y-3">
-                        <div>
-                          <label className="block text-xs text-foreground-secondary mb-1">
-                            Total Supply
-                          </label>
-                          <input
-                            type="number"
-                            min="1"
-                            value={totalSupply}
-                            onChange={(e) => setTotalSupply(e.target.value)}
-                            className="w-full rounded-lg border border-border bg-background-elevated px-3 py-2 text-sm font-mono"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs text-foreground-secondary mb-1">
-                            Unit Price (sats)
-                          </label>
-                          <input
-                            type="number"
-                            min="1"
-                            value={unitPriceSat}
-                            onChange={(e) => setUnitPriceSat(e.target.value)}
-                            className="w-full rounded-lg border border-border bg-background-elevated px-3 py-2 text-sm font-mono"
-                          />
-                        </div>
+                        <InputField
+                          label="Total Supply"
+                          labelClassName="text-xs text-foreground-secondary mb-1"
+                          type="number"
+                          min="1"
+                          value={totalSupply}
+                          onChange={(e) => setTotalSupply(e.target.value)}
+                          className="font-mono"
+                        />
+                        <InputField
+                          label="Unit Price (sats)"
+                          labelClassName="text-xs text-foreground-secondary mb-1"
+                          type="number"
+                          min="1"
+                          value={unitPriceSat}
+                          onChange={(e) => setUnitPriceSat(e.target.value)}
+                          className="font-mono"
+                        />
                         <Button
                           fullWidth
                           onClick={() =>

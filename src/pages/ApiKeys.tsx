@@ -17,6 +17,7 @@ import {
   Input,
   SectionHeader,
 } from '@components/ui';
+import { CheckboxField, DateField } from '@components/forms';
 import { useAuthApi } from '@hooks';
 import { useNotificationStore } from '@stores';
 import { formatDate } from '@lib/utils';
@@ -105,23 +106,17 @@ export function ApiKeys() {
                   placeholder="Backoffice bot"
                   required
                 />
-                <Input
-                  label="Expira en"
-                  type="datetime-local"
-                  value={apiKeyExpiry}
-                  onChange={(event) => setApiKeyExpiry(event.target.value)}
-                />
+                <DateField label="Expira en" mode="datetime-local" value={apiKeyExpiry} onChange={(event) => setApiKeyExpiry(event.target.value)} />
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-foreground">Scopes</p>
                   {apiScopeOptions.map((scope) => (
-                    <label key={scope} className="flex items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={apiKeyScopes.includes(scope)}
-                        onChange={() => handleScopeToggle(scope)}
-                      />
-                      <span>{scope}</span>
-                    </label>
+                    <CheckboxField
+                      key={scope}
+                      checked={apiKeyScopes.includes(scope)}
+                      onChange={() => handleScopeToggle(scope)}
+                      label={scope}
+                      card
+                    />
                   ))}
                 </div>
                 <Button type="submit" isLoading={isCreatingApiKey} disabled={!apiKeyScopes.length}>
