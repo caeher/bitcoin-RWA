@@ -26,9 +26,8 @@ import {
   SectionHeader,
   StatTile,
 } from '@components';
-import { InputField } from '@components/forms';
+import { InputField, SelectField } from '@components/forms';
 import { useTokenizationApi } from '@hooks';
-import type { Asset } from '@types';
 
 // Mocks removed
 
@@ -36,6 +35,7 @@ export function AssetDetail() {
   const { id } = useParams<{ id: string }>();
   const [totalSupply, setTotalSupply] = useState('1000');
   const [unitPriceSat, setUnitPriceSat] = useState('1000');
+  const [visibility, setVisibility] = useState<'public' | 'private'>('public');
   const { data: asset, isLoading } = useTokenizationApi().getAssetDetail(id || '');
   const { mutate: evaluate, isPending: isEvaluating } = useTokenizationApi().evaluateAsset;
   const { mutate: tokenize, isPending: isTokenizing } = useTokenizationApi().tokenizeAsset;
@@ -171,7 +171,7 @@ export function AssetDetail() {
             )}
 
             {/* Documents */}
-            {asset.documents_url && (
+            {(asset.documents_url || asset.document) && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -181,11 +181,12 @@ export function AssetDetail() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
+                    {asset.documents_url ? (
                       <a
                         href={asset.documents_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex items-center justify-between p-3 rounded-lg bg-background-elevated hover:bg-background-elevated/80 transition-colors group"
+                        className="flex items-center justify-between rounded-lg bg-background-elevated p-3 transition-colors group hover:bg-background-elevated/80"
                       >
                         <div className="flex items-center gap-3">
                           <FileText size={18} className="text-foreground-secondary" />
@@ -194,6 +195,24 @@ export function AssetDetail() {
                         </div>
                         <ArrowRight size={16} className="text-foreground-secondary group-hover:text-foreground" />
                       </a>
+                    ) : null}
+
+                    {asset.document ? (
+                      <div className="rounded-lg bg-background-elevated p-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <FileText size={18} className="text-foreground-secondary" />
+                            <div>
+                              <p className="font-medium">{asset.document.filename}</p>
+                              <p className="text-xs text-foreground-secondary">
+                                {asset.document.content_type} • {asset.document.size_bytes.toLocaleString()} bytes
+                              </p>
+                            </div>
+                          </div>
+                          <Badge variant="secondary" size="sm">Managed</Badge>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 </CardContent>
               </Card>
@@ -244,6 +263,15 @@ export function AssetDetail() {
                           onChange={(e) => setUnitPriceSat(e.target.value)}
                           className="font-mono"
                         />
+                        <SelectField
+                          label="Visibility"
+                          value={visibility}
+                          onChange={(e) => setVisibility(e.target.value as 'public' | 'private')}
+                          options={[
+                            { value: 'public', label: 'Public token' },
+                            { value: 'private', label: 'Private token' },
+                          ]}
+                        />
                         <Button
                           fullWidth
                           onClick={() =>
@@ -251,6 +279,7 @@ export function AssetDetail() {
                               assetId: asset.id,
                               total_supply: Math.max(1, Number(totalSupply) || 0),
                               unit_price_sat: Math.max(1, Number(unitPriceSat) || 0),
+                              visibility,
                             })
                           }
                           isLoading={isTokenizing}

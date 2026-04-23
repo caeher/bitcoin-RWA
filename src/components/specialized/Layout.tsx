@@ -5,6 +5,7 @@ import {
   LayoutDashboard, 
   Building2, 
   BookOpen,
+  ShoppingBag,
   KeyRound,
   Megaphone, 
   Settings, 
@@ -54,6 +55,7 @@ export function Layout({ children, requireAuth = true, adminOnly = false }: Layo
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/wallet', label: 'Wallet', icon: Wallet },
     { path: '/assets', label: 'Assets', icon: Building2 },
+    { path: '/marketplace', label: 'Public Tokens', icon: ShoppingBag },
     { path: '/campaigns', label: 'Campaigns', icon: Megaphone },
     { path: '/api-keys', label: 'API Keys', icon: KeyRound },
     {

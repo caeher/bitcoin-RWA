@@ -1,71 +1,38 @@
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { formatSats } from '@lib/utils';
-import { 
-  Layout, 
+import {
+  EmptyState,
+  Layout,
+  OpenOrdersCard,
+  RecentTradesCard,
   TradingChartCard,
   TradingOrderBookCard,
   TradingOrderForm,
   TradingPairHeader,
-  RecentTradesCard,
-  OpenOrdersCard,
 } from '@components';
-import type { OrderBook, PricePoint, Order } from '@types';
+import { useMarketplaceApi, useTokenizationApi, useWalletApi } from '@hooks';
+import { useNotificationStore } from '@stores';
+import { formatDate, formatSats } from '@lib/utils';
+import type { PricePoint } from '@types';
 
-// Mock data
-const mockOrderBook: OrderBook = {
-  bids: [
-    { price: 49500, quantity: 50, total: 2475000, order_count: 3 },
-    { price: 49000, quantity: 75, total: 3675000, order_count: 5 },
-    { price: 48500, quantity: 100, total: 4850000, order_count: 4 },
-    { price: 48000, quantity: 120, total: 5760000, order_count: 6 },
-    { price: 47500, quantity: 200, total: 9500000, order_count: 8 },
-    { price: 47000, quantity: 150, total: 7050000, order_count: 5 },
-    { price: 46500, quantity: 80, total: 3720000, order_count: 3 },
-    { price: 46000, quantity: 100, total: 4600000, order_count: 4 },
-  ],
-  asks: [
-    { price: 50500, quantity: 30, total: 1515000, order_count: 2 },
-    { price: 51000, quantity: 45, total: 2295000, order_count: 3 },
-    { price: 51500, quantity: 60, total: 3090000, order_count: 4 },
-    { price: 52000, quantity: 80, total: 4160000, order_count: 5 },
-    { price: 52500, quantity: 100, total: 5250000, order_count: 6 },
-    { price: 53000, quantity: 70, total: 3710000, order_count: 4 },
-    { price: 53500, quantity: 50, total: 2675000, order_count: 3 },
-    { price: 54000, quantity: 40, total: 2160000, order_count: 2 },
-  ],
-  spread: 1000,
-  last_price: 50000,
-};
+function buildPriceHistory(basePrice: number, tradePrices: number[]): PricePoint[] {
+  const prices = tradePrices.length > 0 ? tradePrices : [basePrice];
 
-const mockPriceHistory: PricePoint[] = Array.from({ length: 100 }, (_, i) => {
-  const basePrice = 48000;
-  const randomChange = (Math.random() - 0.5) * 5000;
-  const price = basePrice + randomChange + (i * 200);
-  return {
-    timestamp: Date.now() - (100 - i) * 3600000,
-    open: price - Math.random() * 200,
-    high: price + Math.random() * 300,
-    low: price - Math.random() * 300,
-    close: price,
-    volume: Math.floor(Math.random() * 10000),
-  };
-});
+  return prices.map((price, index) => {
+    const previous = prices[index - 1] ?? price;
+    const low = Math.min(price, previous);
+    const high = Math.max(price, previous);
 
-const mockTrades: Array<{ time: string; price: number; quantity: number; type: 'buy' | 'sell' }> = [
-  { time: '14:32:05', price: 50000, quantity: 5, type: 'buy' },
-  { time: '14:31:42', price: 49950, quantity: 12, type: 'sell' },
-  { time: '14:31:18', price: 49950, quantity: 3, type: 'buy' },
-  { time: '14:30:55', price: 49900, quantity: 8, type: 'sell' },
-  { time: '14:30:31', price: 49900, quantity: 15, type: 'buy' },
-  { time: '14:30:08', price: 49850, quantity: 6, type: 'sell' },
-  { time: '14:29:45', price: 49850, quantity: 10, type: 'buy' },
-  { time: '14:29:22', price: 49800, quantity: 4, type: 'sell' },
-];
-
-const mockOpenOrders: Order[] = [
-  { id: '1', token_id: '1', user_id: '1', side: 'sell', quantity: 10, price_sat: 51000, status: 'open', filled_quantity: 0, created_at: new Date().toISOString() },
-];
+    return {
+      timestamp: Date.now() - (prices.length - index) * 60 * 60 * 1000,
+      open: previous,
+      high,
+      low,
+      close: price,
+      volume: Math.max(1, index + 1),
+    };
+  });
+}
 
 export function TokenTrading() {
   const { tokenId } = useParams<{ tokenId: string }>();
@@ -75,46 +42,141 @@ export function TokenTrading() {
   const [price, setPrice] = useState('');
   const [chartType, setChartType] = useState<'candles' | 'line'>('candles');
 
-  // Calculate total
-  const total = useMemo(() => {
-    const qty = parseFloat(quantity) || 0;
-    const prc = orderType === 'market' 
-      ? (orderSide === 'buy' ? mockOrderBook.asks[0].price : mockOrderBook.bids[0].price)
-      : (parseFloat(price) || 0);
-    return qty * prc;
-  }, [quantity, price, orderType, orderSide]);
+  const { success } = useNotificationStore();
+  const tokenizationApi = useTokenizationApi();
+  const marketplaceApi = useMarketplaceApi();
+  const walletApi = useWalletApi();
 
-  const currentPrice = mockOrderBook.last_price;
-  const change24h = 2.3;
-  const high24h = 52500;
-  const low24h = 47500;
-  const volume24h = 12500000;
-  const assetSymbol = tokenId?.toUpperCase() || 'DOB';
+  const { data: tokenizedAssets, isLoading: isLoadingAssets } = tokenizationApi.getAssets('tokenized');
+  const asset = useMemo(
+    () => (tokenizedAssets?.items || []).find((item) => item.token?.id === tokenId),
+    [tokenId, tokenizedAssets?.items]
+  );
+
+  const { data: orderBook, isLoading: isLoadingOrderBook } = marketplaceApi.getOrderBook(tokenId || '');
+  const { data: tradesData } = marketplaceApi.getTradeHistory(tokenId);
+  const { data: ordersData } = marketplaceApi.getOrders(tokenId, undefined, 'open');
+  const { data: wallet } = walletApi.getWalletSummary();
+  const { mutate: placeOrder, isPending: isPlacingOrder } = marketplaceApi.placeOrder;
+  const { mutate: cancelOrder, isPending: isCancellingOrder } = marketplaceApi.cancelOrder;
+
+  const bestBid = orderBook?.bids?.[0]?.price ?? asset?.token?.unit_price_sats ?? 0;
+  const bestAsk = orderBook?.asks?.[0]?.price ?? asset?.token?.unit_price_sats ?? 0;
+  const effectivePrice =
+    orderType === 'market'
+      ? orderSide === 'buy'
+        ? bestAsk || bestBid
+        : bestBid || bestAsk
+      : Number(price) || 0;
+
+  const total = (Number(quantity) || 0) * effectivePrice;
+  const submitDisabled = !tokenId || !asset?.token || !quantity || effectivePrice <= 0;
+
+  const recentTrades = useMemo(
+    () =>
+      (tradesData?.items || []).slice(0, 8).map((trade) => ({
+        time: new Date(trade.created_at).toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        }),
+        price: trade.price_sat,
+        quantity: trade.quantity,
+        type: trade.price_sat >= bestAsk ? 'buy' as const : 'sell' as const,
+      })),
+    [bestAsk, tradesData?.items]
+  );
+
+  const priceHistory = useMemo(
+    () => buildPriceHistory(asset?.token?.unit_price_sats || 0, (tradesData?.items || []).map((trade) => trade.price_sat)),
+    [asset?.token?.unit_price_sats, tradesData?.items]
+  );
+
+  const handleSubmitOrder = () => {
+    if (!tokenId || submitDisabled) {
+      return;
+    }
+
+    placeOrder(
+      {
+        token_id: tokenId,
+        side: orderSide,
+        order_type: orderType === 'market' ? 'limit' : orderType,
+        quantity: Math.max(1, Number(quantity) || 0),
+        price_sat: Math.max(1, effectivePrice),
+      },
+      {
+        onSuccess: () => {
+          success('Order placed', `Your ${orderSide} order was submitted successfully.`);
+          setQuantity('');
+          if (orderType !== 'market') {
+            setPrice('');
+          }
+        },
+      }
+    );
+  };
+
+  if (isLoadingAssets || !tokenId) {
+    return (
+      <Layout>
+        <EmptyState
+          variant="page"
+          tone="warning"
+          title="Loading token..."
+          icon={<div className="h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent" />}
+        />
+      </Layout>
+    );
+  }
+
+  if (!asset?.token) {
+    return (
+      <Layout>
+        <EmptyState
+          variant="page"
+          title="Token not found"
+          description="The selected token is not available in the platform catalog."
+        />
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
       <div className="space-y-6">
         <TradingPairHeader
           backTo="/marketplace"
-          backLabel="Marketplace"
-          title="Downtown Office Building"
-          price={currentPrice}
-          changePercent={change24h}
+          backLabel="Public Tokens"
+          title={asset.name}
+          price={orderBook?.last_price || asset.token.unit_price_sats}
+          changePercent={0}
           metrics={[
-            { label: '24h High', value: formatSats(high24h) },
-            { label: '24h Low', value: formatSats(low24h) },
-            { label: '24h Vol', value: formatSats(volume24h) },
+            { label: 'Best Bid', value: `${formatSats(bestBid)} sats` },
+            { label: 'Best Ask', value: `${formatSats(bestAsk)} sats` },
+            { label: '24h Volume', value: `${formatSats(orderBook?.volume_24h || 0)} sats` },
+            { label: 'Visibility', value: asset.token.visibility || 'private' },
           ]}
         />
 
-        <div className="grid xl:grid-cols-3 gap-6">
-          <div className="xl:col-span-2 space-y-6">
+        <div className="grid gap-6 xl:grid-cols-3">
+          <div className="space-y-6 xl:col-span-2">
             <TradingChartCard
               chartType={chartType}
               onChartTypeChange={setChartType}
-              data={mockPriceHistory}
+              data={priceHistory}
             />
-            <TradingOrderBookCard orderBook={mockOrderBook} />
+            {isLoadingOrderBook || !orderBook ? (
+              <EmptyState
+                variant="card"
+                tone="warning"
+                title="Order book unavailable"
+                description="No live order book data is available for this token yet."
+              />
+            ) : (
+              <TradingOrderBookCard orderBook={orderBook} />
+            )}
           </div>
 
           <div className="space-y-6">
@@ -124,17 +186,28 @@ export function TokenTrading() {
               quantity={quantity}
               price={price}
               total={total}
-              availableLabel="2,000,000 sats"
-              submitLabel={`${orderSide === 'buy' ? 'Buy' : 'Sell'} ${assetSymbol}`}
+              availableLabel={`${formatSats(wallet?.onchain_balance_sats || 0)} sats`}
+              submitLabel={`${orderSide === 'buy' ? 'Buy' : 'Sell'} ${asset.token.ticker}`}
+              isSubmitting={isPlacingOrder}
+              submitDisabled={submitDisabled}
               onOrderSideChange={setOrderSide}
               onOrderTypeChange={setOrderType}
               onQuantityChange={setQuantity}
               onPriceChange={setPrice}
+              onSubmit={handleSubmitOrder}
             />
 
-            <RecentTradesCard trades={mockTrades} />
+            <RecentTradesCard trades={recentTrades} />
 
-            <OpenOrdersCard orders={mockOpenOrders} onCancel={() => undefined} />
+            <OpenOrdersCard
+              orders={ordersData?.items || []}
+              onCancel={(orderId) => cancelOrder(orderId)}
+              emptyDescription="Your active orders for this token will appear here."
+            />
+
+            {isCancellingOrder ? (
+              <p className="text-sm text-foreground-secondary">Cancelling order...</p>
+            ) : null}
           </div>
         </div>
       </div>

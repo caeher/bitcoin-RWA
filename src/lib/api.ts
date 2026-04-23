@@ -28,10 +28,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const url = `${API_BASE}${path.startsWith('/v1') ? path : `/v1${path.startsWith('/') ? path : `/${path}`}`}`;
   
   const headers = new Headers(customConfig.headers || {});
+  const hasFormDataBody = customConfig.body instanceof FormData;
   
   // Always set Content-Type for methods that send a body
   const method = (customConfig.method || 'GET').toUpperCase();
-  if (['POST', 'PUT', 'PATCH'].includes(method) && !headers.has('Content-Type')) {
+  if (['POST', 'PUT', 'PATCH'].includes(method) && !headers.has('Content-Type') && !hasFormDataBody) {
     headers.set('Content-Type', 'application/json');
   }
 
@@ -134,21 +135,21 @@ export const api = {
     request<T>(path, { 
       ...options, 
       method: 'POST',
-      body: body ? JSON.stringify(body) : undefined 
+      body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined 
     }),
     
   put: <T>(path: string, body?: unknown, options?: Omit<RequestOptions, 'method'>) => 
     request<T>(path, { 
       ...options, 
       method: 'PUT',
-      body: body ? JSON.stringify(body) : undefined 
+      body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined 
     }),
     
   patch: <T>(path: string, body?: unknown, options?: Omit<RequestOptions, 'method'>) => 
     request<T>(path, { 
       ...options, 
       method: 'PATCH',
-      body: body ? JSON.stringify(body) : undefined 
+      body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined 
     }),
     
   delete: <T>(path: string, options?: Omit<RequestOptions, 'method' | 'body'>) => 

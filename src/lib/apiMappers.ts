@@ -121,6 +121,7 @@ export const mapAssetToken = (raw: any, assetName?: string): AssetTokenOut => {
     circulating_supply: raw.circulating_supply ?? totalSupply,
     unit_price_sats: unitPrice,
     market_cap_sats: raw.market_cap_sats ?? totalSupply * unitPrice,
+    visibility: raw.visibility ?? undefined,
     minted_at: raw.minted_at,
     asset_group_key: raw.asset_group_key ?? raw.liquid_asset_id ?? undefined,
     issuance_metadata: raw.issuance_metadata ?? undefined,
@@ -136,6 +137,14 @@ export const mapAsset = (raw: any): Asset => ({
   status: raw.status,
   valuation_sat: raw.valuation_sat,
   documents_url: raw.documents_url ?? undefined,
+  document: raw.document
+    ? {
+        storage_key: raw.document.storage_key,
+        filename: raw.document.filename,
+        content_type: raw.document.content_type,
+        size_bytes: raw.document.size_bytes,
+      }
+    : undefined,
   ai_score: raw.ai_score ?? undefined,
   ai_analysis:
     raw.ai_analysis == null

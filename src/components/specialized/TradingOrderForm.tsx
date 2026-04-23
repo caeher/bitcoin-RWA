@@ -13,10 +13,13 @@ interface TradingOrderFormProps {
   total: number;
   availableLabel: string;
   submitLabel: string;
+  isSubmitting?: boolean;
+  submitDisabled?: boolean;
   onOrderSideChange: (value: 'buy' | 'sell') => void;
   onOrderTypeChange: (value: 'limit' | 'market') => void;
   onQuantityChange: (value: string) => void;
   onPriceChange: (value: string) => void;
+  onSubmit: () => void;
 }
 
 const orderSideOptions = [
@@ -37,10 +40,13 @@ export function TradingOrderForm({
   total,
   availableLabel,
   submitLabel,
+  isSubmitting,
+  submitDisabled,
   onOrderSideChange,
   onOrderTypeChange,
   onQuantityChange,
   onPriceChange,
+  onSubmit,
 }: TradingOrderFormProps) {
   return (
     <Card>
@@ -100,7 +106,15 @@ export function TradingOrderForm({
           />
         </div>
 
-        <Button fullWidth size="lg" variant={orderSide === 'buy' ? 'default' : 'danger'}>
+        <Button
+          fullWidth
+          size="lg"
+          variant={orderSide === 'buy' ? 'default' : 'danger'}
+          onClick={onSubmit}
+          isLoading={isSubmitting}
+          disabled={submitDisabled}
+          loadingText={orderSide === 'buy' ? 'Placing buy order...' : 'Placing sell order...'}
+        >
           {submitLabel}
         </Button>
 

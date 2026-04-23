@@ -4,14 +4,14 @@ import { asItemsResponse, mapAsset } from '@lib/apiMappers';
 import type { 
   Asset, 
   AssetCreateRequest, 
-  CursorPaginatedResponse,
+  AssetUploadRequest,
 } from '@types';
 
 export const useTokenizationApi = () => {
   const queryClient = useQueryClient();
 
-  const getAssets = (status?: string, category?: string, cursor?: string) => useQuery({
-    queryKey: ['assets', status, category, cursor],
+  const getAssets = (status?: string, category?: string, cursor?: string, requireAuth: boolean = true) => useQuery({
+    queryKey: ['assets', status, category, cursor, requireAuth],
     queryFn: () => {
       const params = new URLSearchParams();
       if (status) params.append('status', status);
@@ -19,23 +19,37 @@ export const useTokenizationApi = () => {
       if (cursor) params.append('cursor', cursor);
       const query = params.toString();
       return api
-        .get<{ assets: any[]; next_cursor: string | null }>(`/tokenization/assets${query ? `?${query}` : ''}`)
+        .get<{ assets: any[]; next_cursor: string | null }>(`/tokenization/assets${query ? `?${query}` : ''}`, { requireAuth })
         .then((response) => asItemsResponse(response.assets.map(mapAsset), response.next_cursor));
     },
   });
 
-  const getAssetDetail = (assetId: string) => useQuery({
-    queryKey: ['asset', assetId],
+  const getAssetDetail = (assetId: string, requireAuth: boolean = true) => useQuery({
+    queryKey: ['asset', assetId, requireAuth],
     queryFn: async () => {
-      const response = await api.get<{ asset: any }>(`/tokenization/assets/${assetId}`);
+      const response = await api.get<{ asset: any }>(`/tokenization/assets/${assetId}`, { requireAuth });
       return mapAsset(response.asset);
     },
     enabled: !!assetId,
   });
 
   const submitAsset = useMutation({
-    mutationFn: async (data: AssetCreateRequest) => {
-      const response = await api.post<{ asset: any }>('/tokenization/assets', data);
+    mutationFn: async (data: AssetCreateRequest | AssetUploadRequest) => {
+      const isUpload = 'document' in data && data.document instanceof File;
+      const response = isUpload
+        ? await api.post<{ asset: any }>(
+            '/tokenization/assets/upload',
+            (() => {
+              const formData = new FormData();
+              formData.append('name', data.name);
+              formData.append('description', data.description);
+              formData.append('category', data.category);
+              formData.append('valuation_sat', String(data.valuation_sat));
+              formData.append('document', data.document);
+              return formData;
+            })()
+          )
+        : await api.post<{ asset: any }>('/tokenization/assets', data);
       return mapAsset(response.asset);
     },
     onSuccess: () => {
@@ -57,12 +71,14 @@ export const useTokenizationApi = () => {
       assetId: string;
       total_supply: number;
       unit_price_sat: number;
+      visibility?: 'public' | 'private';
       liquid_asset_id?: string;
       taproot_asset_id?: string;
     }) => {
       const response = await api.post<{ asset: any }>(`/tokenization/assets/${data.assetId}/tokenize`, {
         total_supply: data.total_supply,
         unit_price_sat: data.unit_price_sat,
+        visibility: data.visibility,
         liquid_asset_id: data.liquid_asset_id,
         taproot_asset_id: data.taproot_asset_id,
       });

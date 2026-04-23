@@ -163,9 +163,17 @@ export interface AssetTokenOut {
   circulating_supply?: number;
   unit_price_sats: number;
   market_cap_sats: number;
+  visibility?: 'public' | 'private';
   minted_at: string;
   asset_group_key?: string;
   issuance_metadata?: Record<string, unknown> | null;
+}
+
+export interface AssetDocument {
+  storage_key: string;
+  filename: string;
+  content_type: string;
+  size_bytes: number;
 }
 
 export interface Asset {
@@ -177,6 +185,7 @@ export interface Asset {
   status: 'pending' | 'evaluating' | 'approved' | 'rejected' | 'tokenized';
   valuation_sat: number;
   documents_url?: string;
+  document?: AssetDocument | null;
   ai_score?: number;
   ai_analysis?: string;
   projected_roi?: number;
@@ -191,6 +200,14 @@ export interface AssetCreateRequest {
   category: 'real_estate' | 'commodity' | 'invoice' | 'art' | 'other';
   valuation_sat: number;
   documents_url?: string;
+}
+
+export interface AssetUploadRequest {
+  name: string;
+  description: string;
+  category: 'real_estate' | 'commodity' | 'invoice' | 'art' | 'other';
+  valuation_sat: number;
+  document: File;
 }
 
 // Marketplace types

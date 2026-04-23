@@ -36,14 +36,14 @@ export function AssetSubmit() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [estimatedValue, setEstimatedValue] = useState('');
-  const [documentsUrl, setDocumentsUrl] = useState('');
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
 
   const canProceed = () => {
     if (currentStep === 0) {
       return name.length > 0 && description.length > 0 && category !== '';
     }
     if (currentStep === 1) {
-      return estimatedValue.length > 0 && parseInt(estimatedValue) > 0 && documentsUrl.length > 0;
+      return estimatedValue.length > 0 && parseInt(estimatedValue) > 0 && !!documentFile;
     }
     return true;
   };
@@ -67,7 +67,7 @@ export function AssetSubmit() {
         description,
         category: category as any,
         valuation_sat: parseInt(estimatedValue),
-        documents_url: documentsUrl,
+        document: documentFile as File,
       });
       setIsComplete(true);
     } catch (e) {
@@ -190,14 +190,21 @@ export function AssetSubmit() {
                   required
                 />
 
-                <Input
-                  label="Supporting Documents URL"
-                  placeholder="https://example.com/asset-documents.pdf"
-                  value={documentsUrl}
-                  onChange={(e) => setDocumentsUrl(e.target.value)}
-                  helperText="The current API expects a public document URL instead of direct file upload."
-                  required
-                />
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Supporting Document (PDF)
+                  </label>
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={(e) => setDocumentFile(e.target.files?.[0] || null)}
+                    className="block w-full rounded-md border border-border bg-background-surface px-3 py-2 text-sm text-foreground file:mr-4 file:rounded-md file:border-0 file:bg-accent-bitcoin/10 file:px-3 file:py-2 file:text-sm file:font-medium file:text-accent-bitcoin"
+                    required
+                  />
+                  <p className="text-xs text-foreground-secondary">
+                    Upload the managed PDF that supports the asset review and tokenization process.
+                  </p>
+                </div>
               </div>
             )}
 
@@ -220,7 +227,7 @@ export function AssetSubmit() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-foreground-secondary">Documents</span>
-                      <span className="font-mono text-xs truncate max-w-[220px]">{documentsUrl}</span>
+                      <span className="font-mono text-xs truncate max-w-[220px]">{documentFile?.name || 'No file selected'}</span>
                     </div>
                   </div>
                 </div>

@@ -1,173 +1,98 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Search, 
-  TrendingUp, 
-  TrendingDown,
+import {
   ArrowRight,
-  Activity,
-  BarChart3
+  BadgeCheck,
+  Coins,
+  Search,
+  ShieldCheck,
+  ShoppingCart,
 } from 'lucide-react';
-import { cn, formatSats, formatPercentage, formatNumber } from '@lib/utils';
-import { Layout, Badge, Button, Card, CardContent, CardHeader, CardTitle, EmptyState, SectionHeader, StatTile } from '@components';
+import { formatDate, formatNumber, formatSats } from '@lib/utils';
+import { useTokenizationApi } from '@hooks';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  Layout,
+  SectionHeader,
+  StatTile,
+} from '@components';
 import { InputField, SelectField } from '@components/forms';
-import type { AssetTokenOut, Asset } from '@types';
+import type { Asset } from '@types';
 
-// Mock data
-interface MarketToken extends AssetTokenOut {
-  asset: Asset;
-  change24h: number;
-  volume24h: number;
-}
+type SortBy = 'newest' | 'price' | 'market_cap' | 'supply';
 
-const mockMarketTokens: MarketToken[] = [
-  {
-    id: '1',
-    ticker: 'DOB',
-    total_supply: 1000,
-    unit_price_sats: 50000,
-    market_cap_sats: 50000000,
-    minted_at: new Date().toISOString(),
-    asset_group_key: 'key1',
-    asset: {
-      id: '1',
-      owner_id: 'user1',
-      name: 'Downtown Office Building',
-      description: 'Prime commercial real estate',
-      category: 'real_estate',
-      status: 'tokenized',
-      valuation_sat: 50000000,
-      documents_url: '',
-      ai_score: 85,
-      projected_roi: 12.5,
-      ai_analysis: 'Strong asset',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      token: null,
-    },
-    change24h: 2.3,
-    volume24h: 2500000,
-  },
-  {
-    id: '2',
-    ticker: 'SFA',
-    total_supply: 2000,
-    unit_price_sats: 15000,
-    market_cap_sats: 30000000,
-    minted_at: new Date().toISOString(),
-    asset_group_key: 'key2',
-    asset: {
-      id: '2',
-      owner_id: 'user2',
-      name: 'Solar Farm Alpha',
-      description: '100MW solar installation',
-      category: 'other',
-      status: 'tokenized',
-      valuation_sat: 30000000,
-      documents_url: '',
-      ai_score: 78,
-      projected_roi: 9.2,
-      ai_analysis: 'Renewable energy growth',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      token: null,
-    },
-    change24h: -1.2,
-    volume24h: 1200000,
-  },
-  {
-    id: '3',
-    ticker: 'ACB',
-    total_supply: 500,
-    unit_price_sats: 30000,
-    market_cap_sats: 15000000,
-    minted_at: new Date().toISOString(),
-    asset_group_key: 'key3',
-    asset: {
-      id: '3',
-      owner_id: 'user3',
-      name: 'Art Collection Beta',
-      description: 'Curated contemporary art',
-      category: 'art',
-      status: 'tokenized',
-      valuation_sat: 15000000,
-      documents_url: '',
-      ai_score: 72,
-      projected_roi: 15.8,
-      ai_analysis: 'High appreciation potential',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      token: null,
-    },
-    change24h: 5.7,
-    volume24h: 800000,
-  },
+const sortOptions = [
+  { value: 'newest', label: 'Sort by Newest' },
+  { value: 'market_cap', label: 'Sort by Market Cap' },
+  { value: 'price', label: 'Sort by Price' },
+  { value: 'supply', label: 'Sort by Supply' },
 ];
 
-function MarketOverview() {
-  const totalVolume = mockMarketTokens.reduce((sum, t) => sum + t.volume24h, 0);
-  const totalMarketCap = mockMarketTokens.reduce((sum, t) => sum + t.market_cap_sats, 0);
-  const avgChange = mockMarketTokens.reduce((sum, t) => sum + t.change24h, 0) / mockMarketTokens.length;
+function PublicTokenRow({ asset }: { asset: Asset }) {
+  const token = asset.token;
 
-  return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <StatTile label="24h Volume" value={`${formatSats(totalVolume)} sats`} mono surface="subtle" />
-      <StatTile label="Market Cap" value={`${formatSats(totalMarketCap)} sats`} mono surface="subtle" />
-      <StatTile label="Tokens" value={mockMarketTokens.length} mono surface="subtle" />
-      <StatTile
-        label="Avg Change (24h)"
-        value={formatPercentage(avgChange)}
-        mono
-        surface="subtle"
-        valueTone={avgChange >= 0 ? 'success' : 'danger'}
-      />
-    </div>
-  );
-}
+  if (!token) {
+    return null;
+  }
 
-function TokenRow({ token }: { token: MarketToken }) {
   return (
     <Link to={`/marketplace/${token.id}`}>
-      <div className="flex items-center justify-between p-4 rounded-lg bg-background-surface hover:bg-background-elevated transition-colors group">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-accent-bitcoin/10 flex items-center justify-center">
-            <Activity className="text-accent-bitcoin" size={24} />
+      <div className="flex flex-col gap-4 p-4 transition-colors hover:bg-background-elevated sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent-bitcoin/10">
+            <Coins className="text-accent-bitcoin" size={22} />
           </div>
-          <div>
-            <h3 className="font-medium group-hover:text-accent-bitcoin transition-colors">
-              {token.asset.name}
-            </h3>
-            <div className="flex items-center gap-2 mt-1">
-              <Badge variant="secondary" size="sm">
-                {token.asset.category.replace('_', ' ')}
+
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-medium text-foreground">{asset.name}</h3>
+              <Badge variant="success" size="sm">
+                public
               </Badge>
-              <span className="text-xs text-foreground-secondary">
-                AI Score: {token.asset.ai_score}
-              </span>
+              <Badge variant="secondary" size="sm">
+                {token.ticker}
+              </Badge>
+            </div>
+
+            <p className="max-w-2xl text-sm text-foreground-secondary">{asset.description}</p>
+
+            <div className="flex flex-wrap items-center gap-2 text-xs text-foreground-secondary">
+              <span className="capitalize">{asset.category.replace('_', ' ')}</span>
+              <span>•</span>
+              <span>Minted {formatDate(token.minted_at, false)}</span>
+              {asset.document?.filename ? (
+                <>
+                  <span>•</span>
+                  <span>{asset.document.filename}</span>
+                </>
+              ) : null}
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-8">
-          <div className="text-right hidden md:block">
-            <p className="font-mono font-medium">{formatSats(token.unit_price_sats)} sats</p>
+        <div className="flex items-center gap-6 sm:gap-8">
+          <div className="text-right">
+            <p className="font-mono text-sm font-medium">{formatSats(token.unit_price_sats)} sats</p>
             <p className="text-xs text-foreground-secondary">per unit</p>
           </div>
 
-          <div className="text-right hidden sm:block">
+          <div className="hidden text-right md:block">
             <p className="font-mono text-sm">{formatSats(token.market_cap_sats)}</p>
             <p className="text-xs text-foreground-secondary">market cap</p>
           </div>
 
-          <div className={cn(
-            'flex items-center gap-1',
-            token.change24h >= 0 ? 'text-accent-green' : 'text-accent-red'
-          )}>
-            {token.change24h >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-            <span className="font-medium">{formatPercentage(token.change24h)}</span>
+          <div className="hidden text-right lg:block">
+            <p className="font-mono text-sm">{formatNumber(token.total_supply, 0)}</p>
+            <p className="text-xs text-foreground-secondary">total supply</p>
           </div>
 
-          <ArrowRight size={18} className="text-foreground-secondary group-hover:text-foreground" />
+          <ArrowRight size={18} className="text-foreground-secondary" />
         </div>
       </div>
     </Link>
@@ -176,95 +101,123 @@ function TokenRow({ token }: { token: MarketToken }) {
 
 export function Marketplace() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<'price' | 'change' | 'volume'>('volume');
+  const [sortBy, setSortBy] = useState<SortBy>('newest');
+  const { data: assetsData, isLoading, error } = useTokenizationApi().getAssets('tokenized', undefined, undefined, false);
 
-  const filteredTokens = useMemo(() => {
-    let tokens = [...mockMarketTokens];
-    
-    if (searchQuery) {
-      tokens = tokens.filter(t => 
-        t.asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.asset.description.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
+  const publicTokens = useMemo(() => {
+    const items = (assetsData?.items || []).filter((asset) => asset.token?.visibility === 'public');
 
-    switch (sortBy) {
-      case 'price':
-        tokens.sort((a, b) => b.unit_price_sats - a.unit_price_sats);
-        break;
-      case 'change':
-        tokens.sort((a, b) => b.change24h - a.change24h);
-        break;
-      case 'volume':
-        tokens.sort((a, b) => b.volume24h - a.volume24h);
-        break;
-    }
+    const searched = items.filter((asset) => {
+      const haystack = `${asset.name} ${asset.description} ${asset.token?.ticker || ''}`.toLowerCase();
+      return haystack.includes(searchQuery.toLowerCase());
+    });
 
-    return tokens;
-  }, [searchQuery, sortBy]);
+    return searched.sort((left, right) => {
+      const leftToken = left.token!;
+      const rightToken = right.token!;
+
+      switch (sortBy) {
+        case 'price':
+          return rightToken.unit_price_sats - leftToken.unit_price_sats;
+        case 'market_cap':
+          return rightToken.market_cap_sats - leftToken.market_cap_sats;
+        case 'supply':
+          return rightToken.total_supply - leftToken.total_supply;
+        case 'newest':
+        default:
+          return new Date(rightToken.minted_at).getTime() - new Date(leftToken.minted_at).getTime();
+      }
+    });
+  }, [assetsData?.items, searchQuery, sortBy]);
+
+  const totalMarketCap = publicTokens.reduce((sum, asset) => sum + (asset.token?.market_cap_sats || 0), 0);
+  const totalSupply = publicTokens.reduce((sum, asset) => sum + (asset.token?.total_supply || 0), 0);
 
   return (
-    <Layout>
+    <Layout requireAuth={false}>
       <div className="space-y-6">
         <SectionHeader
-          title="Marketplace"
-          description="Trade tokenized real-world assets"
+          title="Public Tokens"
+          description="Tokenized assets issued on the platform and available for public access."
           actions={
-            <div className="flex items-center gap-2">
-              <BarChart3 size={20} className="text-accent-bitcoin" />
-              <span className="text-sm text-foreground-secondary">Live market data</span>
+            <div className="flex items-center gap-2 text-sm text-foreground-secondary">
+              <ShieldCheck size={18} className="text-accent-bitcoin" />
+              <span>Platform-issued catalog</span>
             </div>
           }
         />
 
-        {/* Market Overview */}
-        <MarketOverview />
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <StatTile label="Public Tokens" value={publicTokens.length} mono surface="subtle" />
+          <StatTile label="Market Cap" value={`${formatSats(totalMarketCap)} sats`} mono surface="subtle" />
+          <StatTile label="Total Supply" value={formatNumber(totalSupply, 0)} mono surface="subtle" />
+          <StatTile label="Verified Visibility" value="Public" mono surface="subtle" valueTone="success" />
+        </div>
 
-        {/* Filters */}
         <Card>
           <CardContent className="p-4">
-            <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex flex-col gap-4 md:flex-row">
               <div className="flex-1">
                 <InputField
                   type="text"
-                  placeholder="Search tokens..."
+                  placeholder="Search public tokens..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(event) => setSearchQuery(event.target.value)}
                   leftElement={<Search size={18} />}
                 />
               </div>
               <SelectField
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                options={[
-                  { value: 'volume', label: 'Sort by Volume' },
-                  { value: 'price', label: 'Sort by Price' },
-                  { value: 'change', label: 'Sort by 24h Change' },
-                ]}
+                onChange={(event) => setSortBy(event.target.value as SortBy)}
+                options={sortOptions}
               />
             </div>
           </CardContent>
         </Card>
 
-        {/* Token List */}
         <Card>
-          <CardHeader className="pb-4">
-            <CardTitle>Available Tokens</CardTitle>
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle>Available Public Tokens</CardTitle>
+              <p className="mt-1 text-sm text-foreground-secondary">
+                Enter a token to review details and place buy orders.
+              </p>
+            </div>
+            <Link to="/wallet">
+              <Button variant="outline" leftIcon={<ShoppingCart size={16} />}>
+                Wallet
+              </Button>
+            </Link>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="divide-y divide-border">
-              {filteredTokens.length === 0 ? (
-                <EmptyState
-                  variant="card"
-                  title="No tokens found"
-                  description="Try adjusting your filters or sorting."
-                />
-              ) : (
-                filteredTokens.map(token => (
-                  <TokenRow key={token.id} token={token} />
-                ))
-              )}
-            </div>
+            {isLoading ? (
+              <EmptyState
+                variant="page"
+                tone="warning"
+                title="Loading public tokens..."
+                icon={<div className="h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent" />}
+              />
+            ) : error ? (
+              <EmptyState
+                variant="page"
+                tone="warning"
+                title="Public catalog unavailable"
+                description="The API did not return the public token catalog. Check backend access rules for tokenized assets."
+              />
+            ) : publicTokens.length === 0 ? (
+              <EmptyState
+                variant="page"
+                title="No public tokens found"
+                description="No tokenized assets with public visibility are available yet."
+                icon={<BadgeCheck size={24} />}
+              />
+            ) : (
+              <div className="divide-y divide-border">
+                {publicTokens.map((asset) => (
+                  <PublicTokenRow key={asset.id} asset={asset} />
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

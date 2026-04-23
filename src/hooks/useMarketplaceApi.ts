@@ -9,19 +9,14 @@ import {
   mapTrade,
 } from '@lib/apiMappers';
 import type { 
-  Order, 
   OrderCreateRequest,
-  OrderBook,
-  Trade,
-  Escrow,
-  CursorPaginatedResponse,
 } from '@types';
 
 export const useMarketplaceApi = () => {
   const queryClient = useQueryClient();
 
-  const getOrders = (tokenId?: string, side?: string, status?: string) => useQuery({
-    queryKey: ['orders', tokenId, side, status],
+  const getOrders = (tokenId?: string, side?: string, status?: string, requireAuth: boolean = true) => useQuery({
+    queryKey: ['orders', tokenId, side, status, requireAuth],
     queryFn: () => {
       const params = new URLSearchParams();
       if (tokenId) params.append('token_id', tokenId);
@@ -29,15 +24,15 @@ export const useMarketplaceApi = () => {
       if (status) params.append('status', status);
       const query = params.toString();
       return api
-        .get<{ orders: any[]; next_cursor?: string | null }>(`/marketplace/orders${query ? `?${query}` : ''}`)
+        .get<{ orders: any[]; next_cursor?: string | null }>(`/marketplace/orders${query ? `?${query}` : ''}`, { requireAuth })
         .then((response) => asItemsResponse(response.orders.map(mapOrder), response.next_cursor));
     },
   });
 
-  const getOrderBook = (tokenId: string) => useQuery({
-    queryKey: ['orderbook', tokenId],
+  const getOrderBook = (tokenId: string, requireAuth: boolean = true) => useQuery({
+    queryKey: ['orderbook', tokenId, requireAuth],
     queryFn: async () => {
-      const response = await api.get<any>(`/marketplace/orderbook/${tokenId}`);
+      const response = await api.get<any>(`/marketplace/orderbook/${tokenId}`, { requireAuth });
       return mapOrderBook(response);
     },
     enabled: !!tokenId,
@@ -85,15 +80,15 @@ export const useMarketplaceApi = () => {
     }
   });
 
-  const getTradeHistory = (tokenId?: string, cursor?: string) => useQuery({
-    queryKey: ['trades', tokenId, cursor],
+  const getTradeHistory = (tokenId?: string, cursor?: string, requireAuth: boolean = true) => useQuery({
+    queryKey: ['trades', tokenId, cursor, requireAuth],
     queryFn: () => {
       const params = new URLSearchParams();
       if (tokenId) params.append('token_id', tokenId);
       if (cursor) params.append('cursor', cursor);
       const query = params.toString();
       return api
-        .get<{ trades: any[]; next_cursor?: string | null }>(`/marketplace/trades${query ? `?${query}` : ''}`)
+        .get<{ trades: any[]; next_cursor?: string | null }>(`/marketplace/trades${query ? `?${query}` : ''}`, { requireAuth })
         .then((response) => asItemsResponse(response.trades.map(mapTrade), response.next_cursor));
     },
   });
