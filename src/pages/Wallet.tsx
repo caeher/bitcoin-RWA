@@ -89,10 +89,8 @@ function BalanceOverview() {
 
 function QuickActions() {
   const actions = [
-    { icon: ArrowDownLeft, label: 'Deposit', to: '/wallet/deposit', variant: 'default' as const },
-    { icon: ArrowUpRight, label: 'Withdraw', to: '/wallet/withdraw', variant: 'outline' as const },
-    { icon: Send, label: 'Lightning Pay', to: '/wallet/withdraw', variant: 'outline' as const },
-    { icon: Zap, label: 'Buy BTC', to: '/onboarding', variant: 'outline' as const },
+    { icon: ArrowDownLeft, label: 'Receive', to: '/wallet/deposit', variant: 'default' as const },
+    { icon: Send, label: 'Send', to: '/wallet/withdraw', variant: 'outline' as const },
   ];
 
   return (
