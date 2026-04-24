@@ -110,7 +110,9 @@ async function handleResponse<T>(response: Response, skipErrorToast: boolean): P
     let errorMessage = 'An unexpected error occurred';
     
     // Parse FastAPI 422 Validation Error
-    if (response.status === 422 && data?.detail) {
+    if (response.status === 413) {
+      errorMessage = 'File too large. Please upload a smaller document (max 10MB).';
+    } else if (response.status === 422 && data?.detail) {
       if (Array.isArray(data.detail)) {
         errorMessage = data.detail.map((err: any) => `${err.loc?.join('.') || 'field'}: ${err.msg}`).join(', ');
       } else if (typeof data.detail === 'string') {

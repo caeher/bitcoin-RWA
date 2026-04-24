@@ -11,6 +11,7 @@ import {
 import { cn } from '@lib/utils';
 import { Layout, Button, Card, CardContent, CardHeader, CardTitle, CardDescription, Input, InputField, Badge, SelectField, TextareaField } from '@components';
 import { useTokenizationApi } from '@hooks';
+import { useNotificationStore } from '@stores';
 
 const steps = [
   { title: 'Basic Info', description: 'Asset details' },
@@ -197,7 +198,19 @@ export function AssetSubmit() {
                   <input
                     type="file"
                     accept="application/pdf"
-                    onChange={(e) => setDocumentFile(e.target.files?.[0] || null)}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      if (file && file.size > 10 * 1024 * 1024) {
+                        useNotificationStore.getState().error(
+                          'File too large', 
+                          'Please upload a PDF smaller than 10MB.'
+                        );
+                        e.target.value = '';
+                        setDocumentFile(null);
+                        return;
+                      }
+                      setDocumentFile(file);
+                    }}
                     className="block w-full rounded-md border border-border bg-background-surface px-3 py-2 text-sm text-foreground file:mr-4 file:rounded-md file:border-0 file:bg-accent-bitcoin/10 file:px-3 file:py-2 file:text-sm file:font-medium file:text-accent-bitcoin"
                     required
                   />
