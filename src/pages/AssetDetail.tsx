@@ -347,6 +347,7 @@ export function AssetDetail() {
                         <p className="text-sm text-foreground-secondary">
                           Sign in with a seller or admin account to evaluate or tokenize this asset.
                         </p>
+                        <br />
                         <Link to="/auth/login">
                           <Button fullWidth>Sign In</Button>
                         </Link>
