@@ -115,7 +115,7 @@ export function Assets() {
   const statusParam = selectedStatus === 'all' ? undefined : selectedStatus;
   const categoryParam = selectedCategory === 'all' ? undefined : selectedCategory;
   
-  const { data: assetsData, isLoading } = useTokenizationApi().getAssets(statusParam, categoryParam, undefined, false);
+  const { data: assetsData, isLoading } = useTokenizationApi().getAssets(statusParam, categoryParam);
   const assetsList = assetsData?.items || [];
 
   const filteredAssets = useMemo(() => {

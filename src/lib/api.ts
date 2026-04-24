@@ -39,12 +39,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     headers.set('Content-Type', 'application/json');
   }
 
-  // Add auth token if required
-  if (requireAuth) {
-    const session = useAuthStore.getState().session;
-    if (session?.access_token) {
-      headers.set('Authorization', `Bearer ${session.access_token}`);
-    }
+  // Attach the access token whenever a session exists.
+  // `requireAuth` only controls 401 handling and refresh behavior.
+  const session = useAuthStore.getState().session;
+  if (session?.access_token) {
+    headers.set('Authorization', `Bearer ${session.access_token}`);
   }
 
   const config: RequestInit = {

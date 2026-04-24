@@ -111,12 +111,20 @@ function AppContent() {
         } />
 
         {/* Assets routes */}
-        <Route path="/assets" element={<Assets />} />
-        <Route path="/assets/:id" element={<AssetDetail />} />
+        <Route path="/assets" element={
+          <ProtectedRoute>
+            <Assets />
+          </ProtectedRoute>
+        } />
+        <Route path="/assets/:id" element={
+          <ProtectedRoute>
+            <AssetDetail />
+          </ProtectedRoute>
+        } />
         <Route path="/assets/submit" element={
-          <SellerRoute>
+          <ProtectedRoute>
             <AssetSubmit />
-          </SellerRoute>
+          </ProtectedRoute>
         } />
 
         {/* Marketplace routes */}
