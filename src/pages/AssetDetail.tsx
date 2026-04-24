@@ -8,7 +8,11 @@ import {
   FileText,
   Shield,
   Clock,
-  ArrowRight
+  ArrowRight,
+  CheckCircle2,
+  AlertCircle,
+  Target,
+  BarChart3
 } from 'lucide-react';
 import { cn, formatSats, formatPercentage, formatDate } from '@lib/utils';
 import {
@@ -39,7 +43,7 @@ export function AssetDetail() {
   const [visibility, setVisibility] = useState<'public' | 'private'>('public');
   const { isAuthenticated, isSeller } = useAuthStore();
   const canManageAsset = isAuthenticated && isSeller();
-  const { data: asset, isLoading } = useTokenizationApi().getAssetDetail(id || '', false);
+  const { data: asset, isLoading } = useTokenizationApi().getAssetDetail(id || '', true);
   const { mutate: evaluate, isPending: isEvaluating } = useTokenizationApi().evaluateAsset;
   const { mutate: tokenize, isPending: isTokenizing } = useTokenizationApi().tokenizeAsset;
   const change24h = 2.3; // Mock tracking data
@@ -123,34 +127,131 @@ export function AssetDetail() {
           {/* Main content */}
           <div className="lg:col-span-2 space-y-6">
             {/* AI Analysis */}
-            {asset.ai_score && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield size={20} className="text-accent-bitcoin" />
-                    AI Evaluation
-                  </CardTitle>
-                  <CardDescription>Automated asset analysis and risk assessment</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="flex items-center gap-6">
-                      <AIScoreGauge score={asset.ai_score} size="md" />
-                      <div className="space-y-2">
-                        <div>
-                          <p className="text-sm text-foreground-secondary">Projected ROI</p>
-                          <p className="font-medium text-accent-green">+{asset.projected_roi}%</p>
+            {asset.ai_score && (() => {
+              let analysis: any = {};
+              try {
+                analysis = typeof asset.ai_analysis === 'string' 
+                  ? JSON.parse(asset.ai_analysis) 
+                  : asset.ai_analysis;
+              } catch (e) {
+                analysis = { summary: asset.ai_analysis };
+              }
+
+              return (
+                <Card className="overflow-hidden border-accent-bitcoin/20 bg-gradient-to-br from-background-surface to-background-surface/50">
+                  <CardHeader className="border-b border-border/40 bg-accent-bitcoin/5">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="flex items-center gap-2 text-xl">
+                          <Shield size={22} className="text-accent-bitcoin" />
+                          AI Smart Analysis
+                        </CardTitle>
+                        <CardDescription>Comprehensive risk assessment and market timing report</CardDescription>
+                      </div>
+                      {analysis.risk_level && (
+                        <Badge 
+                          variant={analysis.risk_level === 'low' ? 'success' : 'warning'} 
+                          className="px-3 py-1 text-sm uppercase tracking-wider"
+                        >
+                          {analysis.risk_level} Risk
+                        </Badge>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    {/* Top Stats Row */}
+                    <div className="grid md:grid-cols-3 border-b border-border/40">
+                      <div className="p-6 flex flex-col items-center justify-center border-r border-border/40 bg-background-elevated/30">
+                        <AIScoreGauge score={asset.ai_score} size="md" />
+                        <p className="mt-2 text-xs font-medium text-foreground-secondary uppercase tracking-widest">Trust Score</p>
+                      </div>
+                      <div className="p-6 flex flex-col justify-center border-r border-border/40">
+                        <div className="flex items-center gap-3 mb-1 text-accent-green">
+                          <TrendingUp size={20} />
+                          <span className="text-sm font-semibold uppercase tracking-wider">Projected ROI</span>
                         </div>
+                        <p className="text-3xl font-bold text-accent-green">+{asset.projected_roi}%</p>
+                        <p className="text-xs text-foreground-secondary mt-1 italic">Estimated annual return</p>
+                      </div>
+                      <div className="p-6 flex flex-col justify-center">
+                        <div className="flex items-center gap-3 mb-1 text-accent-bitcoin">
+                          <Target size={20} />
+                          <span className="text-sm font-semibold uppercase tracking-wider">Market Timing</span>
+                        </div>
+                        <p className="text-2xl font-bold capitalize">{analysis.market_timing || 'Neutral'}</p>
+                        <p className="text-xs text-foreground-secondary mt-1">Based on current market trend</p>
                       </div>
                     </div>
-                    <div className="bg-background-elevated rounded-lg p-4">
-                      <p className="text-sm text-foreground-secondary mb-2">Analysis Summary</p>
-                      <p className="text-sm">{asset.ai_analysis}</p>
+
+                    <div className="p-6 space-y-6">
+                      {/* Summary Section */}
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-semibold text-foreground-secondary uppercase tracking-widest flex items-center gap-2">
+                          <FileText size={14} />
+                          Analysis Summary
+                        </h4>
+                        <p className="text-foreground leading-relaxed italic border-l-2 border-accent-bitcoin/30 pl-4 py-1 bg-accent-bitcoin/5 rounded-r-lg">
+                          "{analysis.summary}"
+                        </p>
+                      </div>
+
+                      {/* Insights Grid */}
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {/* Strengths */}
+                        <div className="space-y-3 rounded-xl bg-accent-green/5 border border-accent-green/10 p-4">
+                          <h4 className="text-sm font-bold text-accent-green flex items-center gap-2 uppercase tracking-wider">
+                            <CheckCircle2 size={16} />
+                            Key Strengths
+                          </h4>
+                          <ul className="space-y-2">
+                            {analysis.strengths?.map((s: string, i: number) => (
+                              <li key={i} className="text-sm flex items-start gap-2 text-foreground/80">
+                                <span className="text-accent-green mt-1">•</span>
+                                {s}
+                              </li>
+                            )) || <li className="text-sm text-foreground-secondary italic text-center py-2">No specific strengths noted</li>}
+                          </ul>
+                        </div>
+
+                        {/* Concerns */}
+                        <div className="space-y-3 rounded-xl bg-accent-orange/5 border border-accent-orange/10 p-4">
+                          <h4 className="text-sm font-bold text-accent-orange flex items-center gap-2 uppercase tracking-wider">
+                            <AlertCircle size={16} />
+                            Risk Considerations
+                          </h4>
+                          <ul className="space-y-2">
+                            {analysis.concerns?.map((c: string, i: number) => (
+                              <li key={i} className="text-sm flex items-start gap-2 text-foreground/80">
+                                <span className="text-accent-orange mt-1">•</span>
+                                {c}
+                              </li>
+                            )) || <li className="text-sm text-foreground-secondary italic text-center py-2">No significant risks identified</li>}
+                          </ul>
+                        </div>
+                      </div>
+
+                      {/* Score Breakdown Footer */}
+                      {analysis.score_breakdown && (
+                        <div className="pt-4 border-t border-border/40">
+                          <h4 className="text-[10px] font-bold text-foreground-secondary uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+                            <BarChart3 size={12} />
+                            Technical Confidence Metrics
+                          </h4>
+                          <div className="flex flex-wrap gap-x-6 gap-y-2">
+                            {Object.entries(analysis.score_breakdown).map(([key, val]: [string, any]) => (
+                              <div key={key} className="flex items-center gap-2">
+                                <span className="text-[10px] text-foreground-secondary capitalize">{key.replace('_', ' ')}:</span>
+                                <span className="text-[10px] font-mono font-bold text-accent-bitcoin">{Number(val).toFixed(2)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                  </CardContent>
+                </Card>
+              );
+            })()}
 
             {/* Token Info */}
             {isTokenized && asset.token && (
