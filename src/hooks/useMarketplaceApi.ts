@@ -47,6 +47,9 @@ export const useMarketplaceApi = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['orderbook', variables.token_id] });
+      queryClient.invalidateQueries({ queryKey: ['walletSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['trades'] });
     }
   });
 

@@ -183,6 +183,7 @@ export interface Asset {
   name: string;
   description: string;
   category: 'real_estate' | 'commodity' | 'invoice' | 'art' | 'other';
+  location?: string;
   status: 'pending' | 'evaluating' | 'approved' | 'rejected' | 'tokenized';
   valuation_sat: number;
   documents_url?: string;
@@ -232,6 +233,7 @@ export interface OrderCreateRequest {
   token_id: string;
   side: 'buy' | 'sell';
   order_type?: 'limit' | 'stop_limit';
+  execution_mode?: 'order' | 'instant';
   quantity: number;
   price_sat: number;
   trigger_price_sat?: number | null;

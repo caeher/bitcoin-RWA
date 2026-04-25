@@ -31,7 +31,7 @@ export function TokenTrading() {
   const { data: tradesData } = marketplaceApi.getTradeHistory(tokenId);
   const { data: ordersData } = marketplaceApi.getOrders(tokenId, undefined, 'open');
   const { data: wallet } = walletApi.getWalletSummary();
-  const { mutate: placeOrder, isPending: isPlacingOrder } = marketplaceApi.placeOrder;
+  const { mutateAsync: placeOrder, isPending: isPlacingOrder } = marketplaceApi.placeOrder;
   const { mutate: cancelOrder, isPending: isCancellingOrder } = marketplaceApi.cancelOrder;
 
   const bestBid = orderBook?.bids?.[0]?.price ?? asset?.token?.unit_price_sats ?? 0;
@@ -41,29 +41,26 @@ export function TokenTrading() {
   const total = (Number(quantity) || 0) * effectivePrice;
   const submitDisabled = !tokenId || !asset?.token || !quantity || effectivePrice <= 0;
 
-  const handleSubmitOrder = (paymentMethod: 'lightning' | 'onchain') => {
+  const handleSubmitOrder = async (paymentMethod: 'lightning' | 'onchain') => {
     if (!tokenId || submitDisabled) {
       return;
     }
 
-    placeOrder(
-      {
+    try {
+      await placeOrder({
         token_id: tokenId,
         side: 'buy',
         order_type: 'limit',
+        execution_mode: 'instant',
         quantity: Math.max(1, Number(quantity) || 0),
         price_sat: Math.max(1, effectivePrice),
-      },
-      {
-        onSuccess: () => {
-          success('Order placed', `Your buy order was submitted successfully via ${paymentMethod}.`);
-          setQuantity('');
-        },
-        onError: (err: any) => {
-          notifyError('Order failed', err.message || 'An unexpected error occurred while placing your order.');
-        },
-      }
-    );
+      });
+      success('Purchase completed', `Your purchase was completed successfully via ${paymentMethod}.`);
+      setQuantity('');
+    } catch (err: any) {
+      notifyError('Purchase failed', err.message || 'An unexpected error occurred while completing your purchase.');
+      throw err;
+    }
   };
 
   if (isLoadingAssets || !tokenId) {
