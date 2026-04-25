@@ -51,6 +51,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     headers,
   };
 
+  // Always bypass browser HTTP cache for reads so wallet/campaign balances stay fresh.
+  if (method === 'GET' && !config.cache) {
+    config.cache = 'no-store';
+  }
+
   try {
     const response = await fetch(url, config);
 

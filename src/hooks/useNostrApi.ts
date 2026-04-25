@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@lib/api';
+import { mapWallet } from '@lib/apiMappers';
 import type {
   CampaignCreateRequest,
   CampaignFundingOut,
@@ -10,6 +11,18 @@ import type {
 
 export const useNostrApi = () => {
   const queryClient = useQueryClient();
+  const refreshWalletState = async () => {
+    const walletResponse = await api.get<{ wallet: any }>('/wallet');
+    queryClient.setQueryData(['walletSummary'], mapWallet(walletResponse.wallet));
+    queryClient.invalidateQueries({ queryKey: ['walletSummary'] });
+    queryClient.invalidateQueries({ queryKey: ['transactions'] });
+
+    // Force immediate sync for visible wallet surfaces after funding/refunds.
+    await Promise.all([
+      queryClient.refetchQueries({ queryKey: ['walletSummary'], type: 'active' }),
+      queryClient.refetchQueries({ queryKey: ['transactions'], type: 'active' }),
+    ]);
+  };
 
   const getCampaigns = () => useQuery({
     queryKey: ['nostrCampaigns'],
@@ -47,9 +60,10 @@ export const useNostrApi = () => {
       api.post<CampaignOut>(`/nostr/campaigns/${data.campaignId}/fund/intraledger`, {
         amount_sat: data.amount_sat,
       }),
-    onSuccess: (_, variables) => {
+    onSuccess: async (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['nostrCampaigns'] });
       queryClient.invalidateQueries({ queryKey: ['nostrCampaign', variables.campaignId] });
+      await refreshWalletState();
     },
   });
 
@@ -85,9 +99,10 @@ export const useNostrApi = () => {
   const cancelCampaign = useMutation({
     mutationFn: (campaignId: string) =>
       api.post<CampaignOut>(`/nostr/campaigns/${campaignId}/cancel`),
-    onSuccess: (_, campaignId) => {
+    onSuccess: async (_, campaignId) => {
       queryClient.invalidateQueries({ queryKey: ['nostrCampaigns'] });
       queryClient.invalidateQueries({ queryKey: ['nostrCampaign', campaignId] });
+      await refreshWalletState();
     },
   });
 
