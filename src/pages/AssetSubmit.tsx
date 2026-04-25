@@ -86,8 +86,7 @@ export function AssetSubmit() {
             </div>
             <h2 className="text-2xl font-bold mb-2">Asset Submitted!</h2>
             <p className="text-foreground-secondary mb-6 max-w-md mx-auto">
-              Your asset has been submitted and is now being evaluated by our AI system. 
-              You'll be notified once the evaluation is complete.
+              Your tokenization request was sent successfully. Please wait for an admin to approve it; once approved, you can decide when to tokenize the asset.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link to="/assets">
@@ -248,10 +247,9 @@ export function AssetSubmit() {
                 <div className="flex items-start gap-3 p-4 rounded-lg bg-accent-bitcoin/10 border border-accent-bitcoin/20">
                   <Sparkles className="text-accent-bitcoin shrink-0 mt-0.5" size={18} />
                   <div>
-                    <p className="font-medium text-sm">AI Evaluation</p>
+                    <p className="font-medium text-sm">Admin Approval</p>
                     <p className="text-sm text-foreground-secondary">
-                      Your asset will be evaluated by our AI system within 2-3 business days. 
-                      You'll receive a detailed risk assessment and ROI projection.
+                      An admin will review your asset request. Tokenization will only become available after approval.
                     </p>
                   </div>
                 </div>

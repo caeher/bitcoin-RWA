@@ -41,11 +41,15 @@ export function AssetDetail() {
   const [totalSupply, setTotalSupply] = useState('1000');
   const [unitPriceSat, setUnitPriceSat] = useState('1000');
   const [visibility, setVisibility] = useState<'public' | 'private'>('public');
-  const { isAuthenticated, isSeller } = useAuthStore();
-  const canManageAsset = isAuthenticated && isSeller();
+  const { user, isAuthenticated, isAdmin } = useAuthStore();
   const { data: asset, isLoading } = useTokenizationApi().getAssetDetail(id || '', true);
   const { mutate: evaluate, isPending: isEvaluating } = useTokenizationApi().evaluateAsset;
   const { mutate: tokenize, isPending: isTokenizing } = useTokenizationApi().tokenizeAsset;
+  const normalizedOwnerId = asset?.owner_id?.trim().toLowerCase();
+  const normalizedUserId = user?.id?.trim().toLowerCase();
+  const isAssetOwner = !!normalizedOwnerId && !!normalizedUserId && normalizedOwnerId === normalizedUserId;
+  const canApproveAsset = isAuthenticated && isAdmin();
+  const canTokenizeAsset = isAuthenticated && !isAdmin() && isAssetOwner;
   const change24h = 2.3; // Mock tracking data
 
   if (isLoading) {
@@ -342,22 +346,62 @@ export function AssetDetail() {
                     <p className="text-foreground-secondary mb-4">
                       This asset is currently {asset.status.replace('_', ' ')}.
                     </p>
-                    {!canManageAsset ? (
+                    {!isAuthenticated ? (
                       <div className="space-y-3">
                         <p className="text-sm text-foreground-secondary">
-                          Sign in with a seller or admin account to evaluate or tokenize this asset.
+                          Sign in to review the status of this asset.
                         </p>
                         <br />
                         <Link to="/auth/login">
                           <Button fullWidth>Sign In</Button>
                         </Link>
                       </div>
-                    ) : asset.status === 'pending' && (
-                       <Button fullWidth onClick={() => evaluate(asset.id)} isLoading={isEvaluating}>
-                         Request AI Evaluation
-                       </Button>
-                    )}
-                    {canManageAsset && asset.status === 'approved' && (
+                    ) : asset.status === 'pending' && canApproveAsset ? (
+                      <Button
+                        fullWidth
+                        onClick={() => evaluate(asset.id)}
+                        isLoading={isEvaluating}
+                        loadingText="Approving..."
+                      >
+                        Approve Tokenization
+                      </Button>
+                    ) : asset.status === 'pending' ? (
+                      <div className="rounded-lg border border-accent-bitcoin/20 bg-accent-bitcoin/10 p-4">
+                        <p className="text-sm font-medium">Awaiting admin approval</p>
+                        <p className="mt-1 text-sm text-foreground-secondary">
+                          Your request has been sent. Please wait until an admin approves it before tokenizing.
+                        </p>
+                      </div>
+                    ) : asset.status === 'evaluating' ? (
+                      <div className="rounded-lg border border-border bg-background-elevated p-4">
+                        <p className="text-sm font-medium">Review in progress</p>
+                        <p className="mt-1 text-sm text-foreground-secondary">
+                          This asset is being reviewed. Tokenization will become available to the owner if it is approved.
+                        </p>
+                      </div>
+                    ) : canApproveAsset && asset.status === 'approved' ? (
+                      <div className="rounded-lg border border-accent-green/20 bg-accent-green/10 p-4">
+                        <p className="text-sm font-medium">Tokenization approved</p>
+                        <p className="mt-1 text-sm text-foreground-secondary">
+                          The owner can now tokenize this asset when they choose.
+                        </p>
+                      </div>
+                    ) : asset.status === 'approved' && !isAssetOwner ? (
+                      <div className="rounded-lg border border-accent-green/20 bg-accent-green/10 p-4">
+                        <p className="text-sm font-medium">Approved for tokenization</p>
+                        <p className="mt-1 text-sm text-foreground-secondary">
+                          Only the asset owner can start tokenization.
+                        </p>
+                      </div>
+                    ) : asset.status === 'approved' && isAdmin() ? (
+                      <div className="rounded-lg border border-accent-green/20 bg-accent-green/10 p-4">
+                        <p className="text-sm font-medium">Approved for tokenization</p>
+                        <p className="mt-1 text-sm text-foreground-secondary">
+                          Switch to the owner account to start tokenization.
+                        </p>
+                      </div>
+                    ) : null}
+                    {canTokenizeAsset && asset.status === 'approved' && (
                       <div className="space-y-3">
                         <InputField
                           label="Total Supply"
