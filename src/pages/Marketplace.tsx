@@ -1,14 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight,
   BadgeCheck,
-  Coins,
   Search,
   ShieldCheck,
   ShoppingCart,
 } from 'lucide-react';
-import { formatDate, formatNumber, formatSats } from '@lib/utils';
+import { formatNumber, formatSats } from '@lib/utils';
 import { useTokenizationApi } from '@hooks';
 import {
   Badge,
@@ -19,6 +17,7 @@ import {
   CardTitle,
   EmptyState,
   Layout,
+  PublicTokenCard,
   SectionHeader,
   StatTile,
 } from '@components';
@@ -34,75 +33,12 @@ const sortOptions = [
   { value: 'supply', label: 'Sort by Supply' },
 ];
 
-function PublicTokenRow({ asset }: { asset: Asset }) {
-  const token = asset.token;
 
-  if (!token) {
-    return null;
-  }
-
-  return (
-    <Link to={`/marketplace/${token.id}`}>
-      <div className="flex flex-col gap-4 p-4 transition-colors hover:bg-background-elevated sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent-bitcoin/10">
-            <Coins className="text-accent-bitcoin" size={22} />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-medium text-foreground">{asset.name}</h3>
-              <Badge variant="success" size="sm">
-                public
-              </Badge>
-              <Badge variant="secondary" size="sm">
-                {token.ticker}
-              </Badge>
-            </div>
-
-            <p className="max-w-2xl text-sm text-foreground-secondary">{asset.description}</p>
-
-            <div className="flex flex-wrap items-center gap-2 text-xs text-foreground-secondary">
-              <span className="capitalize">{asset.category.replace('_', ' ')}</span>
-              <span>•</span>
-              <span>Minted {formatDate(token.minted_at, false)}</span>
-              {asset.document?.filename ? (
-                <>
-                  <span>•</span>
-                  <span>{asset.document.filename}</span>
-                </>
-              ) : null}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-6 sm:gap-8">
-          <div className="text-right">
-            <p className="font-mono text-sm font-medium">{formatSats(token.unit_price_sats)} sats</p>
-            <p className="text-xs text-foreground-secondary">per unit</p>
-          </div>
-
-          <div className="hidden text-right md:block">
-            <p className="font-mono text-sm">{formatSats(token.market_cap_sats)}</p>
-            <p className="text-xs text-foreground-secondary">market cap</p>
-          </div>
-
-          <div className="hidden text-right lg:block">
-            <p className="font-mono text-sm">{formatNumber(token.total_supply, 0)}</p>
-            <p className="text-xs text-foreground-secondary">total supply</p>
-          </div>
-
-          <ArrowRight size={18} className="text-foreground-secondary" />
-        </div>
-      </div>
-    </Link>
-  );
-}
 
 export function Marketplace() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('newest');
-  const { data: assetsData, isLoading, error } = useTokenizationApi().getAssets('tokenized', undefined, undefined, false);
+  const { data: assetsData, isLoading, error } = useTokenizationApi().getAssets('tokenized', undefined, undefined, true);
 
   const publicTokens = useMemo(() => {
     const items = (assetsData?.items || []).filter((asset) => asset.token?.visibility === 'public');
@@ -134,7 +70,7 @@ export function Marketplace() {
   const totalSupply = publicTokens.reduce((sum, asset) => sum + (asset.token?.total_supply || 0), 0);
 
   return (
-    <Layout requireAuth={false}>
+    <Layout requireAuth={true}>
       <div className="space-y-6">
         <SectionHeader
           title="Public Tokens"
@@ -180,7 +116,7 @@ export function Marketplace() {
             <div>
               <CardTitle>Available Public Tokens</CardTitle>
               <p className="mt-1 text-sm text-foreground-secondary">
-                Enter a token to review details and place buy orders.
+                Browse our curated selection of tokenized real-world assets.
               </p>
             </div>
             <Link to="/wallet">
@@ -189,7 +125,7 @@ export function Marketplace() {
               </Button>
             </Link>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="p-6">
             {isLoading ? (
               <EmptyState
                 variant="page"
@@ -212,9 +148,9 @@ export function Marketplace() {
                 icon={<BadgeCheck size={24} />}
               />
             ) : (
-              <div className="divide-y divide-border">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {publicTokens.map((asset) => (
-                  <PublicTokenRow key={asset.id} asset={asset} />
+                  <PublicTokenCard key={asset.id} asset={asset} />
                 ))}
               </div>
             )}

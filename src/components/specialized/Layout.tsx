@@ -59,7 +59,7 @@ export function Layout({ children, requireAuth = true, adminOnly = false }: Layo
     { path: '/campaigns', label: 'Campaigns', icon: Megaphone },
     { path: '/api-keys', label: 'API Keys', icon: KeyRound },
     {
-      path: 'https://docs.cubo.caeher.com/',
+      path: 'https://docs.cuboplus.caeher.com/',
       label: 'Documentation',
       icon: BookOpen,
       external: true,

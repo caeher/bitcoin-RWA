@@ -4,50 +4,24 @@ import {
   EmptyState,
   Layout,
   OpenOrdersCard,
-  RecentTradesCard,
-  TradingChartCard,
-  TradingOrderBookCard,
-  TradingOrderForm,
+  TokenInfoCard,
+  TokenPurchaseCard,
   TradingPairHeader,
 } from '@components';
 import { useMarketplaceApi, useTokenizationApi, useWalletApi } from '@hooks';
 import { useNotificationStore } from '@stores';
-import { formatDate, formatSats } from '@lib/utils';
-import type { PricePoint } from '@types';
-
-function buildPriceHistory(basePrice: number, tradePrices: number[]): PricePoint[] {
-  const prices = tradePrices.length > 0 ? tradePrices : [basePrice];
-
-  return prices.map((price, index) => {
-    const previous = prices[index - 1] ?? price;
-    const low = Math.min(price, previous);
-    const high = Math.max(price, previous);
-
-    return {
-      timestamp: Date.now() - (prices.length - index) * 60 * 60 * 1000,
-      open: previous,
-      high,
-      low,
-      close: price,
-      volume: Math.max(1, index + 1),
-    };
-  });
-}
+import { formatSats } from '@lib/utils';
 
 export function TokenTrading() {
   const { tokenId } = useParams<{ tokenId: string }>();
-  const [orderSide, setOrderSide] = useState<'buy' | 'sell'>('buy');
-  const [orderType, setOrderType] = useState<'limit' | 'market'>('limit');
   const [quantity, setQuantity] = useState('');
-  const [price, setPrice] = useState('');
-  const [chartType, setChartType] = useState<'candles' | 'line'>('candles');
 
-  const { success } = useNotificationStore();
+  const { error: notifyError, success } = useNotificationStore();
   const tokenizationApi = useTokenizationApi();
   const marketplaceApi = useMarketplaceApi();
   const walletApi = useWalletApi();
 
-  const { data: tokenizedAssets, isLoading: isLoadingAssets } = tokenizationApi.getAssets('tokenized');
+  const { data: tokenizedAssets, isLoading: isLoadingAssets } = tokenizationApi.getAssets('tokenized', undefined, undefined, true);
   const asset = useMemo(
     () => (tokenizedAssets?.items || []).find((item) => item.token?.id === tokenId),
     [tokenId, tokenizedAssets?.items]
@@ -62,38 +36,12 @@ export function TokenTrading() {
 
   const bestBid = orderBook?.bids?.[0]?.price ?? asset?.token?.unit_price_sats ?? 0;
   const bestAsk = orderBook?.asks?.[0]?.price ?? asset?.token?.unit_price_sats ?? 0;
-  const effectivePrice =
-    orderType === 'market'
-      ? orderSide === 'buy'
-        ? bestAsk || bestBid
-        : bestBid || bestAsk
-      : Number(price) || 0;
+  const effectivePrice = bestAsk || bestBid;
 
   const total = (Number(quantity) || 0) * effectivePrice;
   const submitDisabled = !tokenId || !asset?.token || !quantity || effectivePrice <= 0;
 
-  const recentTrades = useMemo(
-    () =>
-      (tradesData?.items || []).slice(0, 8).map((trade) => ({
-        time: new Date(trade.created_at).toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: false,
-        }),
-        price: trade.price_sat,
-        quantity: trade.quantity,
-        type: trade.price_sat >= bestAsk ? 'buy' as const : 'sell' as const,
-      })),
-    [bestAsk, tradesData?.items]
-  );
-
-  const priceHistory = useMemo(
-    () => buildPriceHistory(asset?.token?.unit_price_sats || 0, (tradesData?.items || []).map((trade) => trade.price_sat)),
-    [asset?.token?.unit_price_sats, tradesData?.items]
-  );
-
-  const handleSubmitOrder = () => {
+  const handleSubmitOrder = (paymentMethod: 'lightning' | 'onchain') => {
     if (!tokenId || submitDisabled) {
       return;
     }
@@ -101,18 +49,18 @@ export function TokenTrading() {
     placeOrder(
       {
         token_id: tokenId,
-        side: orderSide,
-        order_type: orderType === 'market' ? 'limit' : orderType,
+        side: 'buy',
+        order_type: 'limit',
         quantity: Math.max(1, Number(quantity) || 0),
         price_sat: Math.max(1, effectivePrice),
       },
       {
         onSuccess: () => {
-          success('Order placed', `Your ${orderSide} order was submitted successfully.`);
+          success('Order placed', `Your buy order was submitted successfully via ${paymentMethod}.`);
           setQuantity('');
-          if (orderType !== 'market') {
-            setPrice('');
-          }
+        },
+        onError: (err: any) => {
+          notifyError('Order failed', err.message || 'An unexpected error occurred while placing your order.');
         },
       }
     );
@@ -160,48 +108,35 @@ export function TokenTrading() {
           ]}
         />
 
-        <div className="grid gap-6 xl:grid-cols-3">
-          <div className="space-y-6 xl:col-span-2">
-            <TradingChartCard
-              chartType={chartType}
-              onChartTypeChange={setChartType}
-              data={priceHistory}
-            />
-            {isLoadingOrderBook || !orderBook ? (
-              <EmptyState
-                variant="card"
-                tone="warning"
-                title="Order book unavailable"
-                description="No live order book data is available for this token yet."
-              />
-            ) : (
-              <TradingOrderBookCard orderBook={orderBook} />
-            )}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className="space-y-6">
+            <TokenInfoCard asset={asset} />
           </div>
 
           <div className="space-y-6">
-            <TradingOrderForm
-              orderSide={orderSide}
-              orderType={orderType}
+            <TokenPurchaseCard
+              asset={asset}
               quantity={quantity}
-              price={price}
               total={total}
               availableLabel={`${formatSats(wallet?.onchain_balance_sats || 0)} sats`}
-              submitLabel={`${orderSide === 'buy' ? 'Buy' : 'Sell'} ${asset.token.ticker}`}
               isSubmitting={isPlacingOrder}
               submitDisabled={submitDisabled}
-              onOrderSideChange={setOrderSide}
-              onOrderTypeChange={setOrderType}
               onQuantityChange={setQuantity}
-              onPriceChange={setPrice}
               onSubmit={handleSubmitOrder}
             />
 
-            <RecentTradesCard trades={recentTrades} />
-
             <OpenOrdersCard
               orders={ordersData?.items || []}
-              onCancel={(orderId) => cancelOrder(orderId)}
+              onCancel={(orderId) => {
+                cancelOrder(orderId, {
+                  onSuccess: () => {
+                    success('Order cancelled', 'Your order was successfully cancelled.');
+                  },
+                  onError: (err: any) => {
+                    notifyError('Cancel failed', err.message || 'You do not have permission to cancel this order.');
+                  }
+                });
+              }}
               emptyDescription="Your active orders for this token will appear here."
             />
 

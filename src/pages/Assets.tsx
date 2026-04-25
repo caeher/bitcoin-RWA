@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Search, 
-  Building2, 
-  TrendingUp, 
+import {
+  Plus,
+  TrendingUp,
   TrendingDown,
-  Plus
+  Search,
+  Building2
 } from 'lucide-react';
+import { getAssetIcon } from '@lib/icons';
 import { cn, formatSats, formatPercentage } from '@lib/utils';
 import { Layout, AIScoreGauge } from '@components/specialized';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/Card';
@@ -42,6 +43,8 @@ function AssetCard({ asset }: { asset: Asset }) {
   const change24h = Math.random() * 20 - 10; // Mock 24h change
   const isTokenized = asset.status === 'tokenized';
   
+  const CategoryIcon = getAssetIcon(asset.category, asset.id);
+
   return (
     <Link to={`/assets/${asset.id}`}>
       <Card className="h-full hover:border-accent-bitcoin/30 transition-all group">
@@ -49,7 +52,7 @@ function AssetCard({ asset }: { asset: Asset }) {
           {/* Header */}
           <div className="flex items-start justify-between mb-4">
             <div className="w-12 h-12 rounded-xl bg-accent-bitcoin/10 flex items-center justify-center">
-              <Building2 className="text-accent-bitcoin" size={24} />
+              <CategoryIcon className="text-accent-bitcoin" size={24} />
             </div>
             <Badge 
               variant={isTokenized ? 'success' : asset.status === 'approved' ? 'warning' : 'secondary'}
@@ -115,7 +118,7 @@ export function Assets() {
   const statusParam = selectedStatus === 'all' ? undefined : selectedStatus;
   const categoryParam = selectedCategory === 'all' ? undefined : selectedCategory;
   
-  const { data: assetsData, isLoading } = useTokenizationApi().getAssets(statusParam, categoryParam);
+  const { data: assetsData, isLoading } = useTokenizationApi().getAssets(statusParam, categoryParam, undefined, true);
   const assetsList = assetsData?.items || [];
 
   const filteredAssets = useMemo(() => {
