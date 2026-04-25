@@ -69,6 +69,18 @@ export const useAdminApi = () => {
     queryFn: () => api.get<any>('/admin/yield/summary'),
   });
 
+  const getReferralByUser = (userId: string) => useQuery({
+    queryKey: ['adminReferralUser', userId],
+    queryFn: () => api.get<any>(`/admin/referrals/${userId}`),
+    enabled: !!userId,
+  });
+
+  const getYieldByUser = (userId: string) => useQuery({
+    queryKey: ['adminYieldUser', userId],
+    queryFn: () => api.get<any>(`/admin/yield/${userId}`),
+    enabled: !!userId,
+  });
+
   const getAdminKycList = (status?: string) => useQuery({
     queryKey: ['adminKycList', status],
     queryFn: () => {
@@ -121,6 +133,8 @@ export const useAdminApi = () => {
     getTreasurySummary,
     getReferralSummary,
     getYieldSummary,
+    getReferralByUser,
+    getYieldByUser,
     getAdminKycList,
     updateKycStatus,
   };

@@ -83,6 +83,21 @@ export const useMarketplaceApi = () => {
     }
   });
 
+  const externalSignEscrow = useMutation({
+    mutationFn: async (data: { trade_id: string; signature: string; public_key?: string; pset?: string }) => {
+      const response = await api.post<{ escrow: any }>(`/marketplace/escrows/${data.trade_id}/external-sign`, {
+        signature: data.signature,
+        public_key: data.public_key,
+        pset: data.pset,
+      });
+      return response.escrow ? mapEscrow(response.escrow) : response;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['escrow', variables.trade_id] });
+      queryClient.invalidateQueries({ queryKey: ['trades'] });
+    }
+  });
+
   const getTradeHistory = (tokenId?: string, cursor?: string, requireAuth: boolean = true) => useQuery({
     queryKey: ['trades', tokenId, cursor, requireAuth],
     queryFn: () => {
@@ -109,6 +124,20 @@ export const useMarketplaceApi = () => {
     }
   });
 
+  const resolveDispute = useMutation({
+    mutationFn: async (data: { trade_id: string; resolution: string; notes?: string }) => {
+      const response = await api.post<{ dispute: any }>(`/marketplace/trades/${data.trade_id}/dispute/resolve`, {
+        resolution: data.resolution,
+        notes: data.notes,
+      });
+      return mapDispute(response.dispute);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['escrow', variables.trade_id] });
+      queryClient.invalidateQueries({ queryKey: ['trades'] });
+    }
+  });
+
   return {
     getOrders,
     getOrderBook,
@@ -116,7 +145,9 @@ export const useMarketplaceApi = () => {
     cancelOrder,
     getEscrowDetails,
     signEscrow,
+    externalSignEscrow,
     getTradeHistory,
     createDispute,
+    resolveDispute,
   };
 };

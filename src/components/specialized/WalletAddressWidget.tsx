@@ -1,19 +1,26 @@
 import { useQuery } from '@tanstack/react-query';
 import { useWalletApi } from '@hooks/useWalletApi';
 import { CopyButton } from './CopyButton';
+import { BlockExplorerLink } from './BlockExplorerLink';
 import { Wallet } from 'lucide-react';
-import { cn } from '@lib/utils';
 import { Skeleton } from '@components/ui';
 
 export function WalletAddressWidget() {
-  const { createOnchainAddress } = useWalletApi();
+  const { createOnchainAddress, createBitcoinAddress } = useWalletApi();
   
   const { data: addressData, isLoading } = useQuery({
     queryKey: ['wallet-address'],
     queryFn: async () => {
-      // Create or get the current address
-      const response = await createOnchainAddress.mutateAsync();
-      return response;
+      const [liquidAddress, bitcoinAddress] = await Promise.allSettled([
+        createOnchainAddress.mutateAsync(),
+        createBitcoinAddress.mutateAsync(),
+      ]);
+
+      return {
+        liquidAddress: liquidAddress.status === 'fulfilled' ? liquidAddress.value.liquidAddress : undefined,
+        liquidUnconfidentialAddress: liquidAddress.status === 'fulfilled' ? liquidAddress.value.liquidUnconfidentialAddress : undefined,
+        bitcoinSegwitAddress: bitcoinAddress.status === 'fulfilled' ? bitcoinAddress.value.address : undefined,
+      };
     },
     // Keep it indefinitely once loaded
     staleTime: Infinity,
@@ -30,7 +37,13 @@ export function WalletAddressWidget() {
 
   if (!addressData) return null;
 
-  const truncatedAddress = `${addressData.address.slice(0, 6)}...${addressData.address.slice(-6)}`;
+  const liquidAddress = addressData.liquidAddress;
+  const bitcoinAddress = addressData.bitcoinSegwitAddress;
+  const primaryAddress = bitcoinAddress || liquidAddress;
+
+  if (!primaryAddress) return null;
+
+  const truncatedAddress = `${primaryAddress.slice(0, 6)}...${primaryAddress.slice(-6)}`;
 
   return (
     <div className="flex items-center gap-2.5 px-3 py-1.5 bg-background-elevated/50 backdrop-blur-sm rounded-full border border-border hover:border-accent-bitcoin/40 transition-all group shadow-sm">
@@ -40,9 +53,22 @@ export function WalletAddressWidget() {
           {truncatedAddress}
         </span>
       </div>
+      {bitcoinAddress && (
+        <>
+          <div className="w-px h-3 bg-border shrink-0" />
+          <BlockExplorerLink
+            type="address"
+            value={bitcoinAddress}
+            label=""
+            className="text-foreground-secondary hover:text-accent-bitcoin"
+            mono={false}
+            truncate={false}
+          />
+        </>
+      )}
       <div className="w-px h-3 bg-border shrink-0" />
       <CopyButton 
-        text={addressData.address} 
+        text={primaryAddress} 
         size="sm" 
         className="p-0 text-foreground-secondary hover:bg-transparent" 
       />

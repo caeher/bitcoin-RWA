@@ -8,6 +8,7 @@ import {
   ShoppingBag,
   KeyRound,
   Megaphone, 
+  Wrench,
   Settings, 
   LogOut, 
   Menu, 
@@ -58,6 +59,7 @@ export function Layout({ children, requireAuth = true, adminOnly = false }: Layo
     { path: '/marketplace', label: 'Public Tokens', icon: ShoppingBag },
     { path: '/campaigns', label: 'Campaigns', icon: Megaphone },
     { path: '/api-keys', label: 'API Keys', icon: KeyRound },
+    { path: '/operations', label: 'Operations', icon: Wrench },
     {
       path: 'https://docs.cuboplus.caeher.com/',
       label: 'Documentation',

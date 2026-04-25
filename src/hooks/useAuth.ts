@@ -21,22 +21,13 @@ import { api } from '@lib/api';
 export function useAuth() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { login: storeLogin, logout: storeLogout, setLoading, setTwoFactorPending } = useAuthStore();
+  const { login: storeLogin, logout: storeLogout, setLoading } = useAuthStore();
   const { success, error } = useNotificationStore();
   const { setWallet } = useWalletStore();
 
   const login = useCallback(async (credentials: LoginCredentials, redirectTo = '/dashboard') => {
     try {
       setLoading(true);
-      
-      // Check if 2FA is required (mock)
-      const requires2FA = false; // This would come from the API
-      
-      if (requires2FA) {
-        setTwoFactorPending(true, credentials.email);
-        navigate('/auth/2fa');
-        return { success: false, requires2FA: true };
-      }
 
       const response = await api.post<AuthResponse>('/auth/login', credentials, { requireAuth: false });
       
@@ -53,29 +44,15 @@ export function useAuth() {
     } finally {
       setLoading(false);
     }
-  }, [navigate, storeLogin, setLoading, setTwoFactorPending, success, error, queryClient]);
+  }, [navigate, storeLogin, setLoading, success, error, queryClient]);
 
   const verify2FA = useCallback(async (code: string, redirectTo = '/dashboard') => {
     try {
       setLoading(true);
-      
-      // Mock 2FA verification
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // In real implementation, verify code with API
-      const isValid = code === '123456'; // Mock valid code
-      
-      if (!isValid) {
-        throw new Error('Invalid 2FA code');
-      }
 
-      const { twoFactorToken } = useAuthStore.getState();
-      const response = await api.post<AuthResponse>('/auth/login', { email: twoFactorToken || '', password: '' });
-      
-      queryClient.clear();
-      storeLogin(mapUser(response.user), response.tokens);
-      success('Welcome back!', '2FA verification successful');
-      
+      await api.post<void>('/auth/2fa/verify', { totp_code: code });
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      success('2FA verified', 'Your TOTP code was accepted.');
       navigate(redirectTo);
       return { success: true };
     } catch (err) {
@@ -85,7 +62,7 @@ export function useAuth() {
     } finally {
       setLoading(false);
     }
-  }, [navigate, storeLogin, setLoading, success, error, queryClient]);
+  }, [navigate, setLoading, success, error, queryClient]);
 
   const register = useCallback(async (data: RegisterData, redirectTo = '/wallet') => {
     try {

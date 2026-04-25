@@ -8,13 +8,9 @@ import {
   Zap,
   Wallet as WalletIcon,
   Shield,
-  Copy,
-  Check,
-  QrCode,
-  ExternalLink
 } from 'lucide-react';
 import { cn, formatSats, formatRelativeTime, truncateTxid } from '@lib/utils';
-import { Layout, SatoshiAmount, BitcoinAddress, LightningInvoice, CopyButton } from '@components/specialized';
+import { Layout, SatoshiAmount, BitcoinAddress, LightningInvoice, BlockExplorerLink } from '@components/specialized';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@components/ui/Card';
 import { Button } from '@components/ui/Button';
 import { Badge } from '@components/ui/Badge';
@@ -23,9 +19,8 @@ import { InfoRow } from '@components/ui/InfoRow';
 import { SectionHeader } from '@components/ui/SectionHeader';
 import { StatTile } from '@components/ui/StatTile';
 import { InputField, TextareaField } from '@components/forms';
-import { useNotificationStore, useWalletStore } from '@stores';
+import { useNotificationStore } from '@stores';
 import { useWalletApi, useTokenizationApi } from '@hooks';
-import type { Transaction, TokenBalance } from '@types';
 
 // Mocks removed
 
@@ -257,6 +252,9 @@ function TransactionHistory() {
                 <div>
                   <p className="font-medium text-sm">{getLabel(tx.type)}</p>
                   <p className="text-xs text-foreground-secondary">{formatRelativeTime(tx.created_at)}</p>
+                  {tx.txid && (
+                    <BlockExplorerLink type="tx" value={tx.txid} className="mt-1 text-[11px]" />
+                  )}
                 </div>
               </div>
               <div className="text-right">
@@ -308,20 +306,29 @@ export function WalletDeposit() {
   const [activeTab, setActiveTab] = useState<'onchain' | 'lightning'>('onchain');
   const [invoiceAmount, setInvoiceAmount] = useState('100000');
   const [invoiceMemo, setInvoiceMemo] = useState('Wallet deposit');
-  const [depositAddress, setDepositAddress] = useState<string | null>(null);
+  const [depositAddresses, setDepositAddresses] = useState<{
+    liquidAddress?: string;
+    bitcoinSegwitAddress?: string;
+  } | null>(null);
   const { success } = useNotificationStore();
   const { mutateAsync: createAddress, isPending: isCreatingAddress } = useWalletApi().createOnchainAddress;
+  const { mutateAsync: createBitcoinAddress, isPending: isCreatingBitcoinAddress } = useWalletApi().createBitcoinAddress;
   const { mutateAsync: createInvoice, data: invoiceData, isPending: isCreatingInvoice } = useWalletApi().createInvoice;
 
   useEffect(() => {
-    if (activeTab !== 'onchain' || depositAddress) {
+    if (activeTab !== 'onchain' || depositAddresses) {
       return;
     }
 
-    createAddress()
-      .then((response) => setDepositAddress(response.address))
+    Promise.allSettled([createAddress(), createBitcoinAddress()])
+      .then(([liquidResponse, bitcoinResponse]) =>
+        setDepositAddresses({
+          liquidAddress: liquidResponse.status === 'fulfilled' ? liquidResponse.value.liquidAddress : undefined,
+          bitcoinSegwitAddress: bitcoinResponse.status === 'fulfilled' ? bitcoinResponse.value.address : undefined,
+        })
+      )
       .catch(() => null);
-  }, [activeTab, createAddress, depositAddress]);
+  }, [activeTab, createAddress, createBitcoinAddress, depositAddresses]);
 
   const handleGenerateInvoice = async () => {
     try {
@@ -372,17 +379,42 @@ export function WalletDeposit() {
             </div>
 
             {activeTab === 'onchain' ? (
-              depositAddress ? (
-                <BitcoinAddress
-                  address={depositAddress}
-                  label="Send Bitcoin to this address"
-                  variant="large"
-                  qrSize={240}
-                />
+              depositAddresses ? (
+                <div className="space-y-4">
+                  {depositAddresses.bitcoinSegwitAddress && (
+                    <BitcoinAddress
+                      address={depositAddresses.bitcoinSegwitAddress}
+                      label="Send Bitcoin to this SegWit address"
+                      variant="large"
+                      qrSize={240}
+                      showExplorerLink
+                    />
+                  )}
+                  {depositAddresses.liquidAddress && (
+                    <BitcoinAddress
+                      address={depositAddresses.liquidAddress}
+                      label="Liquid confidential address"
+                      variant="default"
+                      qrSize={180}
+                      showExplorerLink={false}
+                      truncate={false}
+                    />
+                  )}
+                </div>
               ) : (
                 <div className="text-center py-8">
                   <p className="text-foreground-secondary mb-4">Generating your on-chain deposit address...</p>
-                  <Button onClick={() => createAddress().then((response) => setDepositAddress(response.address))} isLoading={isCreatingAddress}>
+                  <Button
+                    onClick={() =>
+                      Promise.allSettled([createAddress(), createBitcoinAddress()]).then(([liquidResponse, bitcoinResponse]) =>
+                        setDepositAddresses({
+                          liquidAddress: liquidResponse.status === 'fulfilled' ? liquidResponse.value.liquidAddress : undefined,
+                          bitcoinSegwitAddress: bitcoinResponse.status === 'fulfilled' ? bitcoinResponse.value.address : undefined,
+                        })
+                      )
+                    }
+                    isLoading={isCreatingAddress || isCreatingBitcoinAddress}
+                  >
                     Generate Address
                   </Button>
                 </div>

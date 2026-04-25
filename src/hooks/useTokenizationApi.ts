@@ -96,6 +96,17 @@ export const useTokenizationApi = () => {
     queryFn: () => api.get<any>('/tokenization/liquid/info'),
   });
 
+  const getLiquidIssuances = () => useQuery({
+    queryKey: ['liquidIssuances'],
+    queryFn: () => api.get<any>('/tokenization/liquid/issuances'),
+  });
+
+  const getAssetDocument = (assetId: string) => useQuery({
+    queryKey: ['assetDocument', assetId],
+    queryFn: () => api.get<any>(`/tokenization/assets/${assetId}/document`),
+    enabled: !!assetId,
+  });
+
   return {
     getAssets,
     getAssetDetail,
@@ -103,5 +114,7 @@ export const useTokenizationApi = () => {
     evaluateAsset,
     tokenizeAsset,
     getLiquidInfo,
+    getLiquidIssuances,
+    getAssetDocument,
   };
 };

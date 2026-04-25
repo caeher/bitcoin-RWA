@@ -45,6 +45,7 @@ export type {
 export {
   SatoshiAmount,
   BitcoinAddress,
+  BlockExplorerLink,
   LightningInvoice,
   AIScoreGauge,
   EscrowStatusTracker,

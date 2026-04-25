@@ -21,6 +21,11 @@ import {
   ApiKeys,
   Settings,
   NostrCampaigns,
+  Operations,
+  ForgotPassword,
+  Privacy,
+  Terms,
+  WalletHistory,
 } from './pages';
 
 // Create React Query client
@@ -85,6 +90,9 @@ function AppContent() {
         <Route path="/" element={<Landing />} />
         <Route path="/auth/login" element={<Login />} />
         <Route path="/auth/register" element={<Register />} />
+        <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
 
         {/* Protected routes */}
         <Route path="/dashboard" element={
@@ -107,6 +115,11 @@ function AppContent() {
         <Route path="/wallet/withdraw" element={
           <ProtectedRoute>
             <WalletWithdraw />
+          </ProtectedRoute>
+        } />
+        <Route path="/wallet/history" element={
+          <ProtectedRoute>
+            <WalletHistory />
           </ProtectedRoute>
         } />
 
@@ -165,6 +178,12 @@ function AppContent() {
         <Route path="/api-keys" element={
           <ProtectedRoute>
             <ApiKeys />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/operations" element={
+          <ProtectedRoute>
+            <Operations />
           </ProtectedRoute>
         } />
 

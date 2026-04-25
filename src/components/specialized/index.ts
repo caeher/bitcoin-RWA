@@ -1,5 +1,6 @@
 export { SatoshiAmount } from './SatoshiAmount';
 export { BitcoinAddress } from './BitcoinAddress';
+export { BlockExplorerLink } from './BlockExplorerLink';
 export { LightningInvoice } from './LightningInvoice';
 export { AIScoreGauge } from './AIScoreGauge';
 export { EscrowStatusTracker } from './EscrowStatusTracker';

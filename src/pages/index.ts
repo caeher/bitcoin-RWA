@@ -13,3 +13,5 @@ export { Admin } from './Admin';
 export { ApiKeys } from './ApiKeys';
 export { Settings } from './Settings';
 export { NostrCampaigns } from './NostrCampaigns';
+export { Operations } from './Operations';
+export { ForgotPassword, Privacy, Terms, WalletHistory } from './SupportPages';

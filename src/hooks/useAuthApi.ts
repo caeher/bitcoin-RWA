@@ -153,6 +153,22 @@ export const useAuthApi = () => {
     queryFn: () => api.get<ReferralSummaryResponse>('/auth/referrals/summary'),
   });
 
+  const verifyInternalApiKey = useMutation({
+    mutationFn: (data: { api_key: string; required_scopes?: string[] }) =>
+      api.post<{
+        valid: boolean;
+        user_id?: string;
+        scopes?: string[];
+        reason?: string;
+      }>('/internal/api-keys/verify', data),
+  });
+
+  const getRoleUsers = (role: User['role']) => useQuery({
+    queryKey: ['roleUsers', role],
+    queryFn: () => api.get<{ users?: User[]; role?: string; count?: number }>(`/auth/roles/${role}`),
+    enabled: !!role,
+  });
+
   return {
     login,
     register,
@@ -169,5 +185,7 @@ export const useAuthApi = () => {
     revokeApiKey,
     rotateApiKey,
     getReferralSummary,
+    verifyInternalApiKey,
+    getRoleUsers,
   };
 };

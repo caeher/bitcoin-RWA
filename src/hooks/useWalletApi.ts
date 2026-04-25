@@ -6,11 +6,11 @@ import {
   mapTransaction,
   mapWallet,
 } from '@lib/apiMappers';
+import { normalizeWalletDepositAddresses } from '@lib/walletAddresses';
 import type { 
   Wallet, 
   Transaction, 
   CustodyStatusResponse,
-  TokenBalance,
   CursorPaginatedResponse,
   FeeEstimateResponse,
   Bolt11DecodeResponse,
@@ -53,7 +53,16 @@ export const useWalletApi = () => {
   });
 
   const createOnchainAddress = useMutation({
-    mutationFn: () => api.post<{ address: string; unconfidential_address: string; type: string }>('/wallet/onchain/address'),
+    mutationFn: () =>
+      api.post<Record<string, unknown>>('/wallet/onchain/address').then((response) => ({
+        ...response,
+        ...normalizeWalletDepositAddresses(response),
+      })),
+  });
+
+  const createBitcoinAddress = useMutation({
+    mutationFn: () =>
+      api.post<{ address: string; type: 'bitcoin_segwit'; network: string }>('/wallet/bitcoin/address'),
   });
 
   const createInvoice = useMutation({
@@ -64,10 +73,17 @@ export const useWalletApi = () => {
         amount_sats: number;
         memo?: string | null;
         expiry?: number;
-      }>('http://localhost:8000/v1/lightning/invoices', {
+      }>('/lightning/invoices', {
         amount_sats: data.amount_sats,
         memo: data.description,
       }),
+  });
+
+  const getInvoiceStatus = (rHash: string) => useQuery({
+    queryKey: ['lightningInvoice', rHash],
+    queryFn: () => api.get<any>(`/lightning/invoices/${rHash}`),
+    enabled: !!rHash,
+    refetchInterval: 5000,
   });
 
   const decodeBolt11 = useMutation({
@@ -129,17 +145,67 @@ export const useWalletApi = () => {
       }>('/wallet/fiat/onramp/session', data),
   });
 
+  const getYieldSummary = () => useQuery({
+    queryKey: ['walletYieldSummary'],
+    queryFn: () => api.get<any>('/wallet/yield/summary'),
+  });
+
+  const getWalletQr = (address?: string, amountSats?: number) => useQuery({
+    queryKey: ['walletQr', address, amountSats],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (address) params.append('address', address);
+      if (amountSats) params.append('amount_sats', String(amountSats));
+      const query = params.toString();
+      return api.get<any>(`/wallet/qr${query ? `?${query}` : ''}`);
+    },
+  });
+
+  const getPeginAddress = () => useQuery({
+    queryKey: ['peginAddress'],
+    queryFn: () => api.get<{
+      mainchain_address: string;
+      claim_script?: string;
+      liquid_address?: string;
+    }>('/wallet/pegin/address'),
+  });
+
+  const claimPegin = useMutation({
+    mutationFn: (data: { mainchain_txid: string; vout: number; amount_sat?: number }) =>
+      api.post<any>('/wallet/pegin/claim', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['walletSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    },
+  });
+
+  const pegout = useMutation({
+    mutationFn: (data: { address: string; amount_sat: number; fee_rate_sat_vb?: number }) =>
+      api.post<any>('/wallet/pegout', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['walletSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    },
+  });
+
   return {
     getWalletSummary,
     getCustodyStatus,
     getTransactions,
     getOnchainFees,
     createOnchainAddress,
+    createBitcoinAddress,
     createInvoice,
+    getInvoiceStatus,
     decodeBolt11,
     payInvoice,
     withdrawOnchain,
     getFiatProviders,
     createFiatSession,
+    getYieldSummary,
+    getWalletQr,
+    getPeginAddress,
+    claimPegin,
+    pegout,
   };
 };

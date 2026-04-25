@@ -14,6 +14,7 @@ import {
   SectionHeader,
   StatTile,
 } from '@components/ui';
+import { BlockExplorerLink } from '@components/specialized';
 import { CheckboxField, DateField, SelectField, TextareaField } from '@components/forms';
 import { useNostrApi } from '@hooks';
 import { formatDate, formatSats, truncateAddress } from '@lib/utils';
@@ -430,7 +431,16 @@ export function NostrCampaigns() {
                             className="min-h-0 font-mono"
                           />
                           <p className="text-xs text-foreground-secondary">
-                            Payment hash: {latestExternalFunding.funding.payment_hash || '--'}
+                            Payment hash:{' '}
+                            {latestExternalFunding.funding.payment_hash ? (
+                              <BlockExplorerLink
+                                type="tx"
+                                value={latestExternalFunding.funding.payment_hash}
+                                className="text-xs"
+                              />
+                            ) : (
+                              '--'
+                            )}
                           </p>
                         </div>
                       )}

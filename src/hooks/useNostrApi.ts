@@ -91,6 +91,11 @@ export const useNostrApi = () => {
     },
   });
 
+  const createAnnouncement = useMutation({
+    mutationFn: (data: { title?: string; content: string; tags?: string[]; publish_at?: string | null }) =>
+      api.post<any>('/nostr/announcements', data),
+  });
+
   return {
     getCampaigns,
     getCampaign,
@@ -102,5 +107,6 @@ export const useNostrApi = () => {
     activateCampaign,
     pauseCampaign,
     cancelCampaign,
+    createAnnouncement,
   };
 };

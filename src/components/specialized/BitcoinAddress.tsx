@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Copy, Check, QrCode } from 'lucide-react';
+import { Copy, Check, ExternalLink, QrCode } from 'lucide-react';
 import { cn, truncateAddress, copyToClipboard } from '@lib/utils';
+import { getBlockExplorerUrl } from '@lib/blockExplorer';
 import { Card, CardContent } from '@components/ui/Card';
 
 interface BitcoinAddressProps {
@@ -13,6 +14,7 @@ interface BitcoinAddressProps {
   truncateChars?: number;
   className?: string;
   showCopy?: boolean;
+  showExplorerLink?: boolean;
   variant?: 'default' | 'large' | 'compact';
 }
 
@@ -25,6 +27,7 @@ export function BitcoinAddress({
   truncateChars = 6,
   className,
   showCopy = true,
+  showExplorerLink = false,
   variant = 'default',
 }: BitcoinAddressProps) {
   const [copied, setCopied] = useState(false);
@@ -42,6 +45,17 @@ export function BitcoinAddress({
     return (
       <div className={cn('flex items-center gap-2', className)}>
         <span className="font-mono text-sm text-foreground">{displayAddress}</span>
+        {showExplorerLink && (
+          <a
+            href={getBlockExplorerUrl('address', address)}
+            target="_blank"
+            rel="noreferrer"
+            className="p-1 text-foreground-secondary hover:text-accent-bitcoin transition-colors"
+            title="Open in block explorer"
+          >
+            <ExternalLink size={14} />
+          </a>
+        )}
         {showCopy && (
           <button
             onClick={handleCopy}
@@ -68,14 +82,27 @@ export function BitcoinAddress({
           )}
           <div className="flex items-center gap-3">
             <code className="font-mono text-lg text-foreground break-all">{address}</code>
-            {showCopy && (
-              <button
-                onClick={handleCopy}
-                className="p-2 rounded-md bg-background-elevated hover:bg-accent-bitcoin/10 transition-colors"
-              >
-                {copied ? <Check size={18} className="text-accent-green" /> : <Copy size={18} />}
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {showExplorerLink && (
+                <a
+                  href={getBlockExplorerUrl('address', address)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-2 rounded-md bg-background-elevated hover:bg-accent-bitcoin/10 transition-colors"
+                  title="Open in block explorer"
+                >
+                  <ExternalLink size={18} />
+                </a>
+              )}
+              {showCopy && (
+                <button
+                  onClick={handleCopy}
+                  className="p-2 rounded-md bg-background-elevated hover:bg-accent-bitcoin/10 transition-colors"
+                >
+                  {copied ? <Check size={18} className="text-accent-green" /> : <Copy size={18} />}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </Card>
@@ -101,6 +128,17 @@ export function BitcoinAddress({
               >
                 {copied ? <Check size={16} className="text-accent-green" /> : <Copy size={16} />}
               </button>
+            )}
+            {showExplorerLink && (
+              <a
+                href={getBlockExplorerUrl('address', address)}
+                target="_blank"
+                rel="noreferrer"
+                className="p-2 rounded-md hover:bg-background-elevated transition-colors"
+                title="Open in block explorer"
+              >
+                <ExternalLink size={16} />
+              </a>
             )}
             {showQR && (
               <button
